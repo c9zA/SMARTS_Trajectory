@@ -3,7 +3,7 @@ import cv2
 import matplotlib.pyplot as plt
 from dissection_extractor import run_trajectory_pipeline
 
-IMG = "../left_image_selected/14/48.png"
+IMG = "../left_image_selected/19/119.png"
 OUT = ""
 
 _t0 = time.perf_counter()

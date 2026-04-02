@@ -544,6 +544,8 @@ def _suppress_shadow_components(anchors, total_px=None, img_shape=None, debug_la
     cluster_area_thr = (total_px * CFG.get("shadow_cluster_area_ratio", 0.0)
                         if total_px is not None else 0.0)
 
+    dist_mat_ss = np.linalg.norm(pts[:, None, :] - pts[None, :, :], axis=2)  # (N, N)
+
     for i in range(N):
         # Border exclusion: ONLY for small blobs (instrument edge noise).
         # Valid ink marks near the image boundary are larger and must not be suppressed.
@@ -579,7 +581,7 @@ def _suppress_shadow_components(anchors, total_px=None, img_shape=None, debug_la
         tiny_req = CFG.get("tiny_blob_req_anchor_ratio", 0.0)
         if tiny_req > 0.0 and areas[i] < area_median * tiny_req:
             large_thr = area_median * CFG.get("tiny_blob_anchor_large_ratio", 2.0)
-            dists_ta  = np.linalg.norm(pts - pts[i], axis=1)
+            dists_ta  = dist_mat_ss[i]
             has_anchor = np.any(
                 (dists_ta < CFG["max_link_dist"]) &
                 (areas    >= large_thr) &
@@ -597,7 +599,7 @@ def _suppress_shadow_components(anchors, total_px=None, img_shape=None, debug_la
         # Catches fragmented shadow regions whose individual components are each
         # below the per-blob B0 threshold but form a large spatial cluster.
         if cluster_area_thr > 0:
-            dists_cl = np.linalg.norm(pts - pts[i], axis=1)
+            dists_cl = dist_mat_ss[i]
             cluster_mask = dists_cl < CFG["shadow_density_radius"]
             if cluster_mask.sum() >= CFG["shadow_density_count"]:
                 cluster_total = float(np.sum(areas[cluster_mask]))
@@ -608,7 +610,7 @@ def _suppress_shadow_components(anchors, total_px=None, img_shape=None, debug_la
         if areas[i] > area_median * CFG["shadow_strict_large_ratio"] and solidities[i] < CFG["shadow_strict_solidity"]:
             # Linearity escape: if the neighbourhood within density_radius is linear,
             # this large blob sits on a real ink trajectory — skip B1 suppression.
-            dists_b1   = np.linalg.norm(pts - pts[i], axis=1)
+            dists_b1   = dist_mat_ss[i]
             nearby_b1  = np.where(
                 (dists_b1 < CFG["shadow_density_radius"]) &
                 (np.arange(N) != i) &
@@ -645,7 +647,7 @@ def _suppress_shadow_components(anchors, total_px=None, img_shape=None, debug_la
         # the big blob is likely a real ink mark sitting along a trajectory
         # (not a shadow mass), so skip B2 suppression in that case.
         if areas[i] > large_thresh and solidities[i] < CFG["shadow_solidity_min"]:
-            dists_i  = np.linalg.norm(pts - pts[i], axis=1)
+            dists_i  = dist_mat_ss[i]
             tiny_mask = (
                 (dists_i < CFG["shadow_density_radius"]) &
                 (areas < area_median) &
@@ -675,7 +677,7 @@ def _suppress_shadow_components(anchors, total_px=None, img_shape=None, debug_la
         # distant large blobs on a curve don't falsely appear as a 2D cluster.
         lin_area_thresh = area_median * 0.25
         lin_radius = CFG.get("shadow_linearity_radius", CFG["shadow_density_radius"])
-        dists      = np.linalg.norm(pts - pts[i], axis=1)
+        dists      = dist_mat_ss[i]
         nearby_idx = np.where(
             (dists < lin_radius) &
             (np.arange(N) != i) &
@@ -704,7 +706,7 @@ def _suppress_shadow_components(anchors, total_px=None, img_shape=None, debug_la
             continue
         lin_area_thresh = area_median * 0.25
         lin_radius = CFG.get("shadow_linearity_radius", CFG["shadow_density_radius"])
-        dists = np.linalg.norm(pts - pts[i], axis=1)
+        dists = dist_mat_ss[i]
         # Only un-suppress if a large non-suppressed "anchor" blob is nearby.
         # This prevents floating shadow clusters (far from any real trajectory blob)
         # from being incorrectly freed in images like 8.47 and 7.56.
@@ -836,9 +838,8 @@ def _direction_constrained_chain(anchors, max_link_dist, max_angle_deg, dp_link_
     # shorter chains when blob sizes are equal, without letting count dominate.
     # No upper cap on area — big legitimate ink blobs should be fully rewarded.
     NODE_BONUS   = float(np.median(areas_arr)) * 0.1
-    capped_areas = areas_arr  # no cap: large ink blobs score proportionally
 
-    dp   = np.where(link_ok.T, dist_mat.T * 0.001 + NODE_BONUS + capped_areas[:, np.newaxis], -1.0)
+    dp   = np.where(link_ok.T, dist_mat.T * 0.001 + NODE_BONUS + areas_arr[:, np.newaxis], -1.0)
     back = np.full((N, N), -1, dtype=np.int32)
 
     for _ in range(N - 2):
@@ -846,18 +847,19 @@ def _direction_constrained_chain(anchors, max_link_dist, max_angle_deg, dp_link_
         new_dp   = dp.copy()
         new_back = back.copy()
         for j in range(N):
-            for i in range(N):
-                if dp[i, j] < 0:
-                    continue
-                dir_in = uv[j, i]
-                dots   = uv[i] @ dir_in
-                ok     = link_ok[i] & (dots >= cos_thresh)
-                ok[i]  = ok[j] = False
-                cands  = dp[i, j] + dist_mat[i] * 0.001 + NODE_BONUS + capped_areas
-                better = ok & (cands > new_dp[:, i])
-                new_dp[:,   i] = np.where(better, cands,  new_dp[:,   i])
-                new_back[:, i] = np.where(better, j,      new_back[:, i])
-                improved |= bool(np.any(better))
+            valid_i   = dp[:, j] >= 0                                         # (N,)
+            if not valid_i.any():
+                continue
+            dots_j    = (uv * uv[j][:, None, :]).sum(-1)                      # (N, N)
+            ok_all    = link_ok & (dots_j >= cos_thresh)                       # (N, N)
+            np.fill_diagonal(ok_all, False)
+            ok_all[:, j]   = False
+            ok_all[~valid_i] = False
+            cands_all = dp[:, j, None] + dist_mat * 0.001 + NODE_BONUS + areas_arr[None, :]
+            better_T  = ok_all.T & (cands_all.T > new_dp)
+            new_dp    = np.where(better_T, cands_all.T, new_dp)
+            new_back  = np.where(better_T, j,           new_back)
+            improved |= bool(np.any(better_T))
         dp, back = new_dp, new_back
         if not improved:
             break
