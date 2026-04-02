@@ -1,0 +1,1581 @@
+=== Cell 0 ===
+# Dissection Trajectory Binary Mask Generator
+
+This notebook is **stand-alone** and does not depend on the main automation pipeline files. We'll integrate this module into the pipeline later.
+
+## Dependencies
+- `opencv-python`
+- `numpy`
+- `matplotlib`
+- `scikit-image`
+- `networkx`
+
+If needed:
+```bash
+pip install opencv-python numpy matplotlib scikit-image networkx
+```
+
+=== Cell 1 ===
+# pip install opencv-python numpy matplotlib scikit-image networkx
+
+=== Cell 2 ===
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+from skimage.morphology import skeletonize
+import networkx as nx
+
+
+
+# ------ Configurable parameters ------
+
+CFG = {
+    # Optional enhancement
+    "use_clahe": True,
+
+    # Tissue ROI gating (restrict marker search to tissue neighborhood)
+    # "tissue_v_min": 55,
+    # "tissue_l_min": 60,
+    "tissue_v_min": 40,
+    "tissue_l_min": 40,
+    # "tissue_h_max":70,
+    # "tissue_h_min":112,
+    "cloth_h_min": 85,
+    "cloth_h_max": 135,
+    "cloth_s_min": 25,
+
+    #"tissue_dilate_kernel": 25,
+    "tissue_dilate_kernel": 40,
+
+
+
+    # --- VERY IMPORTANT !!! ---
+    # You need to define a set of color thresholds, different from the one below, if you
+    # want to detect lines that are not marked by purple/blue color!!
+    # There exists a dark fallback threshold set, but beware it's not guaranteed to work!
+    
+    #Purple/blue marker thresholds (primary mode)
+
+    "use_color_marker": True,
+    "marker_h_min": 112,
+    "marker_h_max": 160,
+    "marker_s_min": 90,
+    "marker_v_min": 40,
+
+    # "use_color_marker": True,
+    # "marker_h_min": 112,
+    # "marker_h_max": 175,
+    # "marker_s_min": 80,
+    # "marker_v_min": 40,
+
+    # Dark fallback thresholds (used only when color marker pixels are too few)
+    #"lab_l_max": 115,
+    #"hsv_h_min": 125,
+    "hsv_h_min": 112,
+    #"hsv_h_max": 150,
+    "hsv_h_max": 160,
+    #"lab_l_max": 60,
+    "lab_l_max": 80,
+    "hsv_v_max": 125,
+    "hsv_s_max": 100,
+    "hsv_s_min": 158,
+
+    "min_color_pixels": 10000,
+
+    # denoise + dashed/dotted gap bridging
+    "open_kernel": 2,
+    "close_kernel": 11,
+
+    "close_iters": 1,
+
+    # Component filtering after segmentation
+    "min_component_area": 25,
+    "max_component_area_ratio": 0.03,
+
+    # Branch pruning and final rendering
+    "prune_branch_length": 10,
+    "line_thickness": 3,
+
+    # Longest smooth chain selection across dotted fragments
+    # "max_link_dist": 180.0,
+    "max_link_dist": 500.0,
+    "max_proj_gap": 180.0,
+    "max_lateral_dev": 90.0,
+    # "min_chain_nodes": 3,
+    "min_chain_nodes": 2,
+    "link_thickness": 4,
+
+    # Shadow suppression
+    # "shadow_small_ratio":     2.0,  # replaced by shadow_linearity_threshold
+    "shadow_density_radius":  250,
+    # "shadow_density_count":   5,   # raised to 4: fire linearity test with fewer neighbors
+    "shadow_density_count":   4,
+    "shadow_linearity_threshold": 4.0,
+    # "shadow_large_ratio":     4.0,  # replaced by shadow_linearity_threshold
+    "shadow_large_ratio":      4.0,   # re-enabled for solidity-based Type B
+    "shadow_solidity_min":     0.5,   # merged irregular blobs have low solidity
+    "shadow_strict_large_ratio": 6.0, # Type B1: area > median*6 → definitely merged shadow
+    "shadow_strict_solidity":    0.35, # Type B1: solidity < 0.35 → very irregular merged blob
+    "shadow_abs_area_ratio":     0.015, # Type B0: any blob > 1.5% of frame is shadow/artifact
+    # "shadow_elongation_min":  2.5,  # replaced by shadow_linearity_threshold
+
+    # Direction chain
+    "chain_max_angle_deg":    75,
+    # "chain_outlier_ratio":   2.5,
+    # "chain_outlier_ratio":   3.0,  # reverted: 3.0 re-introduced 7.56 left-edge shadow
+    # "chain_outlier_ratio":   2.5,  # too strict: cuts legitimate end blobs (41.20)
+    "chain_outlier_ratio":   3.0,   # 3.0 safe now that Type B1 suppresses 7.56 shadow
+}
+
+print("Config loaded.")
+
+=== Cell 3 ===
+def enhance_contrast_bgr(img_bgr):
+    #increase the contrast of color img
+    if not CFG["use_clahe"]:
+        return img_bgr
+
+    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    l2 = clahe.apply(l)
+    lab2 = cv2.merge([l2, a, b])
+    return cv2.cvtColor(lab2, cv2.COLOR_LAB2BGR)
+
+#this is used in segment_dark_marker after
+def filter_components(binary_mask, min_area, max_area_ratio):
+    h, w = binary_mask.shape
+    max_area = int(max_area_ratio * h * w)#this is a number, so that large blobs like blood is not confounded
+
+
+    #returns labels_num to each component, then returns a matrix labels same size as img, each pixel labeled group ID, then
+    # stats is a matrix with each label denoting bounding boxes width height, contain CC_STAT_AREA pixel count
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(binary_mask, connectivity=8)
+    #creates a blank img same size
+    cleaned = np.zeros_like(binary_mask)
+    for i in range(1, num_labels):#0 label = bg
+        area = stats[i, cv2.CC_STAT_AREA]
+        if min_area <= area <= max_area:
+            cleaned[labels == i] = 255#each pixel of this component marked white
+    return cleaned#only has components of appropriate size
+
+
+# def build_tissue_roi(lab_l, hsv_v, hsv_h):
+#     # Approximate tissue area (bright enough), then dilate(expand border) so marker near boundaries is retained.
+#     tissue = ((hsv_v >= CFG["tissue_v_min"]) & (lab_l >= CFG["tissue_l_min"]) & ((hsv_h<=CFG["tissue_h_max"]) | (hsv_h>=CFG["tissue_h_min"])))#identify the tissue
+#     tissue_u8 = (tissue.astype(np.uint8) * 255)#saturate the whole tissue
+#
+#     k = cv2.getStructuringElement(
+#         cv2.MORPH_ELLIPSE,
+#         (CFG["tissue_dilate_kernel"], CFG["tissue_dilate_kernel"]),
+#     )
+#     tissue_u8 = cv2.dilate(tissue_u8, k, iterations=0)
+#     return tissue_u8
+def build_tissue_roi(lab_l, hsv_v, hsv_h, hsv_s):
+    bright = (hsv_v >= CFG["tissue_v_min"]) & (lab_l >= CFG["tissue_l_min"])
+    blue_cloth = (
+        (hsv_h >= CFG["cloth_h_min"]) &
+        (hsv_h <= CFG["cloth_h_max"]) &
+        (hsv_s >= CFG["cloth_s_min"])
+    )
+    tissue = bright & ~blue_cloth
+    tissue_u8 = (tissue.astype(np.uint8) * 255)
+    k_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (4,4))#open kernel erodes then dilates
+    k_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))#dilates then erodes
+
+    tissue_u8 = cv2.morphologyEx(tissue_u8, cv2.MORPH_OPEN, k_open)#note we should always remove noise first
+    tissue_u8 = cv2.morphologyEx(tissue_u8, cv2.MORPH_CLOSE, k_close, iterations=2)
+    k = cv2.getStructuringElement(
+        cv2.MORPH_ELLIPSE,
+        (CFG["tissue_dilate_kernel"], CFG["tissue_dilate_kernel"]),
+    )
+    tissue_u8 = cv2.morphologyEx(tissue_u8, cv2.MORPH_CLOSE, k)
+    tissue_u8 = cv2.dilate(tissue_u8, k, iterations=1)
+    return tissue_u8
+
+
+
+
+def segment_dark_marker(img_bgr):
+    """
+    Segment marker-like pixels and bridge dashed gaps.
+    Primary mode: purple/blue marker detection.
+    Fallback mode: dark-ink detection (for black marker datasets - this awaits testing and validation!)
+    Returns uint8 mask in {0,255}.
+    """
+    img = enhance_contrast_bgr(img_bgr)
+
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    l = lab[:, :, 0]
+    h = hsv[:, :, 0]
+    s = hsv[:, :, 1]
+    v = hsv[:, :, 2]
+
+    #tissue_roi = build_tissue_roi(l, v, h)
+    tissue_roi = build_tissue_roi(l, v, h, s)
+
+
+    # Primary: purple/blue marker extraction
+    mask_color = (
+        (h >= CFG["marker_h_min"]) & (h <= CFG["marker_h_max"]) &
+        (s >= CFG["marker_s_min"]) & (v >= CFG["marker_v_min"])
+    )#creates a binary 01 array of whole img
+    mask_color = (mask_color.astype(np.uint8) * 255)#creates binary 0,255 img used by cv2 mod
+    mask_color = cv2.bitwise_and(mask_color, tissue_roi)
+
+    # Fallback: dark marker extraction if color cue is weak
+
+    # mask_dark = (
+    #     (l <= CFG["lab_l_max"]) &
+    #     (v <= CFG["hsv_v_max"]) &
+    #     (s >= CFG["hsv_s_min"])
+    # )
+    mask_dark = (
+        # (v <= 120) &
+        # (s >= 130) &
+        # (h >= 15)
+
+
+        #((v <= 120) & (s >= 140) & (h >= 15) & (l <= 70)) | ((v <= 35) & (s >= 100))
+        #((v <= 120) & (s >= 140) & (h >= 15) & (l <= 50)) | ((v <= 35) & (s >= 130))
+        #((v <= 120) & (s >= 170) & (h >= 60) & (l <= 45)) | ((v <= 35) & (s >= 140))
+        #((v <= 120) & (s >= 190) & (h >= 15)  & (l <= 70))
+        #v th = 100, s recomm 140 and below 190, h threshold between 100 and 150, lgreater than 60
+        #((v>=15) & (v <= 100) & (s >= 190) & (h<=180) & (h >= 100)  & (l <= 60) & (l>=5))
+        ((v <= 100) & (s >= 190) & (h >= 150)  & (l <= 60))
+    )
+    mask_dark = (mask_dark.astype(np.uint8) * 255)
+    mask_dark = cv2.bitwise_and(mask_dark, tissue_roi)
+    print(f"  [dark fallback] mask_dark pixels: {np.count_nonzero(mask_dark)}")
+
+    if (#CFG["use_color_marker"] and
+            int(np.count_nonzero(mask_color)) >= CFG["min_color_pixels"]):
+        mask = mask_color
+        print(img_bgr.shape[0], img_bgr.shape[1])
+        print(mask_color.shape[0], mask_color.shape[1])
+        print('mask_color')
+        print(np.count_nonzero(mask_color))
+    else:
+        mask = mask_dark
+        print(img_bgr.shape[0], img_bgr.shape[1])
+        print(mask_dark.shape[0], mask_dark.shape[1])
+        print('mask_dark')
+        print(np.count_nonzero(mask_dark))
+
+    # Morphological open to denoise, close to bridge dashed/dotted segments.
+    k_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (CFG["open_kernel"], CFG["open_kernel"]))#open kernel erodes then dilates
+    k_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (CFG["close_kernel"], CFG["close_kernel"]))#dilates then erodes
+
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k_open)#note we should always remove noise first
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k_close, iterations=CFG["close_iters"])
+
+    mask = filter_components(mask, CFG["min_component_area"], CFG["max_component_area_ratio"])
+    return mask
+
+
+def skeleton_to_graph(skel_bool):#a binary img only of center pixels of each component
+    """
+    Build an 8-neighbor undirected graph from a boolean skeleton image.
+    Nodes are (y, x) tuples.
+    """
+    G = nx.Graph()#creates undirected graph
+    ys, xs = np.where(skel_bool)#get coordinates of center pixel
+    points = set(zip(ys, xs))#convert to set of coordinated points, fast look-up
+
+    nbrs = [(-1, -1), (-1, 0), (-1, 1),
+            ( 0, -1),          ( 0, 1),
+            ( 1, -1), ( 1, 0), ( 1, 1)]
+    #this loop creates edge with weight of actual distance between center of skeletons that are very close, 1 pixel layer apart
+    for y, x in points:
+        G.add_node((y, x))
+        for dy, dx in nbrs:
+            ny, nx_ = y + dy, x + dx
+            if (ny, nx_) in points:
+                w = np.sqrt(2.0) if (dy != 0 and dx != 0) else 1.0
+                G.add_edge((y, x), (ny, nx_), weight=w)
+    return G
+
+
+def prune_short_branches(G, min_len=10):
+    """
+    Iteratively remove short branches attached to junctions(less than 10 nodes away).
+    A branch is traced from an endpoint (deg=1) until first node with deg > 2 (branch).
+    """
+    changed = True
+    while changed:
+        changed = False
+        deg = dict(G.degree())
+        endpoints = [n for n, d in deg.items() if d == 1]
+
+        for ep in endpoints:
+            if ep not in G:
+                continue
+            path = [ep]
+            prev = None
+            cur = ep
+
+
+            while True:
+                nbrs = [n for n in G.neighbors(cur) if n != prev]
+                if len(nbrs) == 0:#stop if dead end
+                    break
+                nxt = nbrs[0]
+                path.append(nxt)
+                prev, cur = cur, nxt
+                if G.degree(cur) != 2:
+                    break
+
+            # Remove only if this branch ends at a junction and is short.
+            if len(path) <= min_len and G.degree(path[-1]) >= 3:
+                for node in path[:-1]:
+                    if node in G:
+                        G.remove_node(node)
+                changed = True
+                break
+
+    return G
+
+
+def _extract_longest_path_from_graph(skel_bool):
+    """Fallback: longest path inside one connected skeleton graph."""
+    h, w = skel_bool.shape
+    G = skeleton_to_graph(skel_bool)
+    if G.number_of_nodes() == 0:
+        return np.zeros((h, w), dtype=np.uint8)
+
+    G = prune_short_branches(G, min_len=CFG["prune_branch_length"])
+    if G.number_of_nodes() == 0:
+        return np.zeros((h, w), dtype=np.uint8)
+
+    largest_cc = max(nx.connected_components(G), key=len)
+    H = G.subgraph(largest_cc).copy()
+
+    deg = dict(H.degree())
+    endpoints = [n for n, d in deg.items() if d == 1]
+
+    if len(endpoints) >= 2:
+        best_path = None
+        best_dist = -1.0
+        for i in range(len(endpoints)):
+            source = endpoints[i]
+            dists, paths = nx.single_source_dijkstra(H, source=source, weight="weight")
+            for j in range(i + 1, len(endpoints)):
+                target = endpoints[j]
+                if target in dists and dists[target] > best_dist:
+                    best_dist = dists[target]
+                    best_path = paths[target]
+    else:
+        seed = next(iter(H.nodes()))
+        d1, _ = nx.single_source_dijkstra(H, source=seed, weight="weight")
+        u = max(d1, key=d1.get)
+        d2, p2 = nx.single_source_dijkstra(H, source=u, weight="weight")
+        v = max(d2, key=d2.get)
+        best_path = p2[v]
+
+    out = np.zeros((h, w), dtype=np.uint8)
+    if best_path is None or len(best_path) < 2:
+        return out
+
+    for (y1, x1), (y2, x2) in zip(best_path[:-1], best_path[1:]):
+        cv2.line(out, (x1, y1), (x2, y2), 255, thickness=CFG["line_thickness"])
+    return out
+
+
+# def _extract_component_anchors(binary_mask):
+#     """Return component anchors with label ids for dotted-fragment linking."""
+#     num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(binary_mask, connectivity=8)
+#     anchors = []
+#     for lid in range(1, num_labels):
+#         area = stats[lid, cv2.CC_STAT_AREA]
+#         if area < CFG["min_component_area"]:
+#             continue
+#
+#         ys, xs = np.where(labels == lid)
+#         if len(xs) == 0:
+#             continue
+#
+#         cx, cy = centroids[lid]
+#         d2 = (xs - cx) ** 2 + (ys - cy) ** 2
+#         k = int(np.argmin(d2))
+#         ax, ay = float(xs[k]), float(ys[k])
+#
+#         anchors.append({
+#             "label": lid,
+#             "point": np.array([ax, ay], dtype=np.float32),  # x, y
+#             "area": int(area),
+#         })
+#
+#     return anchors, labels
+
+
+def _trim_outlier_links(chain, outlier_ratio):
+      """
+      After chain selection, remove endpoints whose connecting link is much larger
+      than the median link distance (i.e., a distant isolated blob tacked onto the chain).
+      Splits at outlier links and keeps the longest piece.
+      """
+      if len(chain) < 3:
+          return chain
+
+      pts = np.array([c["point"] for c in chain], dtype=np.float64)
+      while len(chain) >= 3:
+          dists  = np.linalg.norm(pts[1:] - pts[:-1], axis=1)
+          med    = float(np.median(dists))
+          bad    = np.where(dists > outlier_ratio * med)[0]
+          if len(bad) == 0:
+              break
+          # Split at the first outlier link; keep the longer piece
+          split  = int(bad[0]) + 1
+          piece1 = chain[:split]
+          piece2 = chain[split:]
+          chain  = piece1 if len(piece1) >= len(piece2) else piece2
+          pts    = np.array([c["point"] for c in chain], dtype=np.float64)
+      return chain
+
+
+# def extract_single_path_mask(binary_mask):
+#     """
+#     Convert mask -> longest smooth chain over dotted fragments -> single path mask.
+#     Fallback to skeleton graph longest path when chain extraction is weak.
+#     """
+#     h, w = binary_mask.shape
+#     skel = skeletonize(binary_mask > 0)
+#     skel_vis = skel.astype(np.uint8) * 255
+#
+#     anchors, labels = _extract_component_anchors(binary_mask)
+#     chain = _longest_smooth_chain(anchors)
+#
+#     # If chain mode fails, fallback to prior graph method.
+#     if len(chain) < 2:
+#         return _extract_longest_path_from_graph(skel), skel_vis
+#
+#     out = np.zeros((h, w), dtype=np.uint8)
+#
+#     # Keep selected components and connect them to form one non-branching long path.
+#     selected_labels = [c["label"] for c in chain]
+#     keep = np.isin(labels, selected_labels)
+#     out[keep] = 255
+#
+#     for a, b in zip(chain[:-1], chain[1:]):
+#         x1, y1 = a["point"]
+#         x2, y2 = b["point"]
+#         cv2.line(
+#             out,
+#             (int(round(x1)), int(round(y1))),
+#             (int(round(x2)), int(round(y2))),
+#             255,
+#             thickness=CFG["link_thickness"],
+#         )
+#
+#     # Light cleanup and thickness normalization.
+#     k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+#     out = cv2.morphologyEx(out, cv2.MORPH_CLOSE, k)
+#
+#     # Finalize by reducing to one path inside this connected result.
+#     out_skel = skeletonize(out > 0)
+#     out = _extract_longest_path_from_graph(out_skel)
+#
+#     return out, skel_vis
+
+def extract_single_path_mask(binary_mask):
+      h, w = binary_mask.shape
+      skel = skeletonize(binary_mask > 0)
+      skel_vis = skel.astype(np.uint8) * 255
+
+      anchors, labels = _extract_component_anchors_with_features(binary_mask)
+      anchors = _suppress_shadow_components(anchors)
+      chain   = _direction_constrained_chain(
+                    anchors,
+                    max_link_dist=CFG["max_link_dist"],
+                    max_angle_deg=CFG["chain_max_angle_deg"])
+      chain   = _trim_outlier_links(chain, CFG["chain_outlier_ratio"])
+
+      if len(chain) < 2:
+          return _extract_longest_path_from_graph(skel), skel_vis
+
+      out = np.zeros((h, w), dtype=np.uint8)
+      selected_labels = [c["label"] for c in chain]
+      out[np.isin(labels, selected_labels)] = 255
+
+      for a, b in zip(chain[:-1], chain[1:]):
+          x1, y1 = a["point"];  x2, y2 = b["point"]
+          cv2.line(out,
+                   (int(round(x1)), int(round(y1))),
+                   (int(round(x2)), int(round(y2))),
+                   255, thickness=CFG["link_thickness"])
+
+      k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+      out = cv2.morphologyEx(out, cv2.MORPH_CLOSE, k)
+      out_skel = skeletonize(out > 0)
+      return _extract_longest_path_from_graph(out_skel), skel_vis
+
+
+def _compute_principal_axis(points_xy):
+    """Compute dominant direction unit vector and its perpendicular."""
+    pts = np.asarray(points_xy, dtype=np.float32)
+    mean = pts.mean(axis=0)
+    centered = pts - mean
+    cov = centered.T @ centered / max(1, len(pts) - 1)
+    vals, vecs = np.linalg.eigh(cov)
+    u = vecs[:, int(np.argmax(vals))]
+    u = u / (np.linalg.norm(u) + 1e-8)
+    n = np.array([-u[1], u[0]], dtype=np.float32)
+    return mean, u.astype(np.float32), n
+
+
+
+
+
+
+
+
+
+# def _longest_smooth_chain(anchors):
+#     """
+#     Longest path DP over component anchors sorted on dominant axis.
+#     Enforces no branching and rejects sudden jumps with geometric constraints.
+#     """
+#     if len(anchors) < 2:
+#         return []
+#
+#     pts = np.array([a["point"] for a in anchors], dtype=np.float32)
+#     mean, u, n = _compute_principal_axis(pts)
+#
+#     # Sort anchors along principal direction.
+#     proj = (pts - mean) @ u
+#     order = np.argsort(proj)
+#     pts_s = pts[order]
+#     anchors_s = [anchors[int(i)] for i in order]
+#
+#     dp = np.zeros(len(anchors_s), dtype=np.float32)
+#     prev = np.full(len(anchors_s), -1, dtype=np.int32)
+#
+#     for i in range(len(anchors_s)):
+#         best_score = 0.0
+#         best_prev = -1
+#
+#         for j in range(i):
+#             dxy = pts_s[i] - pts_s[j]
+#             dist = float(np.linalg.norm(dxy))
+#             if dist < 1e-6:
+#                 continue
+#
+#             dt = float(np.dot(dxy, u))
+#             lat = float(abs(np.dot(dxy, n)))
+#
+#             # Reject backward links and abrupt jumps.
+#             if dt <= 0:
+#                 continue
+#             if dist > CFG["max_link_dist"]:
+#                 continue
+#             if dt > CFG["max_proj_gap"]:
+#                 continue
+#             if lat > CFG["max_lateral_dev"]:
+#                 continue
+#
+#             cand = dp[j] + dist
+#             if cand > best_score:
+#                 best_score = cand
+#                 best_prev = j
+#
+#         dp[i] = best_score
+#         prev[i] = best_prev
+#
+#     end_idx = int(np.argmax(dp))
+#     chain = []
+#     cur = end_idx
+#     while cur >= 0:
+#         chain.append(cur)
+#         cur = int(prev[cur])
+#     chain = chain[::-1]
+#
+#     if len(chain) < CFG["min_chain_nodes"]:
+#         return []
+#
+#     return [anchors_s[i] for i in chain]
+
+
+def _extract_component_anchors_with_features(binary_mask):
+      """Like _extract_component_anchors but also returns elongation per component."""
+      num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(binary_mask, connectivity=8)
+      anchors = []
+      for lid in range(1, num_labels):
+          area = stats[lid, cv2.CC_STAT_AREA]
+          if area < CFG["min_component_area"]:
+              continue
+          cx, cy = centroids[lid]
+          ys, xs = np.where(labels == lid)
+          if len(xs) == 0:
+              continue
+
+          # Closest pixel to centroid
+          d2 = (xs - cx)**2 + (ys - cy)**2
+          k = int(np.argmin(d2))
+          ax, ay = float(xs[k]), float(ys[k])
+
+          # Elongation via 2nd-order central moments
+          comp_u8 = (labels == lid).astype(np.uint8)
+          M = cv2.moments(comp_u8)
+          if M["m00"] > 0:
+              a_m = M["mu20"] / M["m00"]
+              b_m = M["mu11"] / M["m00"]
+              c_m = M["mu02"] / M["m00"]
+              disc = np.sqrt(max(((a_m - c_m) / 2)**2 + b_m**2, 0))
+              eig1 = (a_m + c_m) / 2 + disc
+              eig2 = (a_m + c_m) / 2 - disc
+              elongation = float(np.sqrt(eig1 / max(eig2, 1e-4)))
+          else:
+              elongation = 1.0
+
+          # Convex hull solidity: compact ink blobs are solid, merged shadow blobs are not
+          contours_c, _ = cv2.findContours(comp_u8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+          if contours_c:
+              hull_area = float(cv2.contourArea(cv2.convexHull(contours_c[0])))
+              solidity = float(area) / hull_area if hull_area > 0 else 1.0
+          else:
+              solidity = 1.0
+
+          anchors.append({
+              "label": lid,
+              "point": np.array([ax, ay], dtype=np.float32),
+              "area": int(area),
+              "elongation": elongation,
+              "solidity": solidity,
+          })
+      return anchors, labels
+
+# def _suppress_shadow_components(anchors, total_px=None):
+#       """
+#       Remove shadow artifacts from component list.
+#       Type A: small component surrounded by many other small components (dot cluster).
+#       Type B: large blob with low elongation (irregular shadow mass).
+#       """
+#       if len(anchors) <= 1:
+#           return anchors
+# 
+#       areas = np.array([a["area"] for a in anchors], dtype=np.float32)
+#       pts  = np.array([a["point"] for a in anchors], dtype=np.float32)
+#       elongs = np.array([a["elongation"] for a in anchors], dtype=np.float32)
+# 
+#       area_median  = float(np.median(areas))
+#       small_thresh = area_median * CFG["shadow_small_ratio"]   # default 2.0
+#       large_thresh = area_median * CFG["shadow_large_ratio"]   # default 4.0
+# 
+#       kept = []
+#       for i, anchor in enumerate(anchors):
+#           area      = areas[i]
+#           elongation = elongs[i]
+# 
+#           # Type B: large irregular blob
+#           if area > large_thresh and elongation < CFG["shadow_elongation_min"]:  # default 2.5
+#               continue
+# 
+#           # Type A: small component in a dense cluster of other small components
+#           if area < small_thresh:
+#               dists = np.linalg.norm(pts - pts[i], axis=1)
+#               nearby_small = int(np.sum(
+#                   (dists < CFG["shadow_density_radius"]) &   # default 250 px
+#                   (areas < small_thresh) &
+#                   (np.arange(len(anchors)) != i)
+#               ))
+#               if nearby_small >= CFG["shadow_density_count"]:  # default 5
+#                   continue
+# 
+#           kept.append(anchor)
+#       return kept
+
+def _suppress_shadow_components(anchors):
+      """
+      Remove shadow artifacts using a neighborhood linearity test (replaces Type A/B).
+      A component is shadow if it has >= shadow_density_count neighbors within
+      shadow_density_radius AND those neighbors form a 2D cluster (low PCA linearity).
+      - Ink dots along a trajectory have a LINEAR neighborhood  -> high linearity -> kept.
+      - Shadow dots/blobs have a 2D circular neighborhood       -> low linearity  -> removed.
+      This correctly handles:
+        * large central mass of a shadow cluster (its neighbors are the surrounding dots, 2D)
+        * small scattered shadow dots (their neighbors include the mass and other dots, 2D)
+        * large ink blobs near the trajectory (neighbors are other trajectory dots, linear)
+      """
+      if len(anchors) <= 1:
+          return anchors
+
+      pts = np.array([a["point"] for a in anchors], dtype=np.float32)
+      N   = len(pts)
+      is_shadow = np.zeros(N, dtype=bool)
+
+      areas      = np.array([a["area"]     for a in anchors], dtype=np.float32)
+      solidities = np.array([a.get("solidity", 1.0) for a in anchors], dtype=np.float32)
+      area_median  = float(np.median(areas))
+      large_thresh = area_median * CFG["shadow_large_ratio"]
+
+      for i in range(N):
+          # Type B0 (absolute area): any single blob larger than X% of the full frame is
+          # definitely a shadow or large artifact — real ink blobs are always small relative
+          # to the frame. Independent of median or solidity; catches the 38.54 merged shadow
+          # (1.55% of frame) which has solidity 0.445 and therefore escapes Type B1.
+          if total_px is not None and areas[i] > total_px * CFG["shadow_abs_area_ratio"]:
+              is_shadow[i] = True
+              continue
+
+          # Type B1 (strict): very large AND very irregular blob => definitely a merged shadow.
+          # When morphological closing fuses many scattered shadow dots into one big blob,
+          # no tiny neighbors remain, so the combined check (B2) misses it.
+          # Solidity of a fused-dots blob is very low (convex hull >> filled area).
+          # Ink blobs are compact and continuous, so their solidity stays high.
+          if areas[i] > area_median * CFG["shadow_strict_large_ratio"] and solidities[i] < CFG["shadow_strict_solidity"]:
+              is_shadow[i] = True
+              continue
+
+          # Type B2 (combined): large + moderately irregular + surrounded by tiny scattered dots.
+          # Both conditions must hold: ink blobs can be large or irregular, but they do NOT
+          # have many small dots closely around them the way shadow regions do.
+          # (Old B used only area+solidity, which incorrectly filtered narrow ink blobs.)
+          # if areas[i] > large_thresh and solidities[i] < CFG["shadow_solidity_min"]:
+          #     is_shadow[i] = True
+          #     continue
+          if areas[i] > large_thresh and solidities[i] < CFG["shadow_solidity_min"]:
+              dists_i = np.linalg.norm(pts - pts[i], axis=1)
+              n_tiny_nearby = int(np.sum(
+                  (dists_i < CFG["shadow_density_radius"]) &
+                  (areas < area_median) &
+                  (np.arange(N) != i)
+              ))
+              if n_tiny_nearby >= CFG["shadow_density_count"] - 1:
+                  is_shadow[i] = True
+                  continue
+
+          dists      = np.linalg.norm(pts - pts[i], axis=1)
+          nearby_idx = np.where(
+              (dists < CFG["shadow_density_radius"]) & (np.arange(N) != i)
+          )[0]
+
+          if len(nearby_idx) < CFG["shadow_density_count"] - 1:
+              continue          # too few neighbors to form a meaningful cluster
+
+          # PCA linearity: ratio of largest to second eigenvalue of the point cloud
+          group_pts = pts[np.append(nearby_idx, i)]
+          centered  = group_pts - group_pts.mean(axis=0)
+          cov       = centered.T @ centered
+          vals      = np.sort(np.linalg.eigvalsh(cov))[::-1]   # descending
+          linearity = vals[0] / (vals[1] + 1e-6)
+
+          if linearity < CFG["shadow_linearity_threshold"]:
+              is_shadow[i] = True
+
+      return [a for i, a in enumerate(anchors) if not is_shadow[i]]
+
+
+def _direction_constrained_chain(anchors, max_link_dist, max_angle_deg):
+      """
+      Longest chain with direction-continuity constraint.
+      Handles curved paths (U-shapes, arcs) by tracking local direction.
+      O(N^3) via Bellman-Ford relaxation.
+      """
+      if len(anchors) < 2:
+          return anchors
+
+      pts = np.array([a["point"] for a in anchors], dtype=np.float64)
+      N = len(pts)
+      cos_thresh = np.cos(np.radians(max_angle_deg))
+
+      # Pairwise: vec[i,j] = direction i→j (unnorm), dist_mat[i,j] = distance
+      vec      = pts[None, :, :] - pts[:, None, :]            # (N,N,2)
+      dist_mat = np.linalg.norm(vec, axis=2)                  # (N,N)
+      with np.errstate(invalid='ignore', divide='ignore'):
+          uv = vec / (dist_mat[:, :, None] + 1e-8)            # unit vectors (N,N,2)
+
+      link_ok = (dist_mat > 1) & (dist_mat <= max_link_dist)  # valid links (N,N)
+
+      # dp[i,j]   = best total distance for chain ending at i, last step was j→i
+      # back[i,j] = which k was before j in the best chain (i.e., k→j→i)
+      # Old: dp   = np.where(link_ok.T, dist_mat.T, -1.0)            # init all single links
+      # Old: HOP_BONUS = CFG["max_link_dist"]           # ensures node count beats raw distance
+      # Old: dp   = np.where(link_ok.T, dist_mat.T + HOP_BONUS, -1.0)   # flat hop bonus
+      areas_arr  = np.array([a["area"] for a in anchors], dtype=np.float64)
+      NODE_BONUS = float(np.median(areas_arr))          # median area: large blobs beat many tiny ones
+      dp   = np.where(link_ok.T, dist_mat.T * 0.01 + NODE_BONUS + areas_arr[:, np.newaxis], -1.0)
+      back = np.full((N, N), -1, dtype=np.int32)
+
+      for _ in range(N - 2):          # at most N-2 extension steps
+          improved = False
+          new_dp   = dp.copy()
+          new_back = back.copy()
+
+          for j in range(N):
+              for i in range(N):
+                  if dp[i, j] < 0:
+                      continue
+                  dir_in = uv[j, i]                           # direction arriving at i
+
+                  # Vectorised check for all outgoing links i→k
+                  dots = uv[i] @ dir_in                       # (N,) cosines with i→k
+                  ok   = link_ok[i] & (dots >= cos_thresh)
+                  ok[i] = ok[j] = False
+
+                  # Old: cands  = dp[i, j] + dist_mat[i]             # (N,)
+                  # Old: cands  = dp[i, j] + dist_mat[i] + HOP_BONUS    # flat hop bonus
+                  cands  = dp[i, j] + dist_mat[i] * 0.01 + NODE_BONUS + areas_arr  # area-weighted per node
+                  better = ok & (cands > new_dp[:, i])
+                  new_dp[:, i]   = np.where(better, cands, new_dp[:, i])
+                  new_back[:, i] = np.where(better, j, new_back[:, i])
+                  improved |= bool(np.any(better))
+
+          dp, back = new_dp, new_back
+          if not improved:
+              break
+
+      if dp.max() < 0:
+          return []
+
+      # Best terminal state
+      end_i, end_j = map(int, np.unravel_index(np.argmax(dp), dp.shape))
+
+      # Backtrack
+      path = [end_i, end_j]
+      ci, cj = end_i, end_j
+      while back[ci, cj] >= 0:
+          pk = int(back[ci, cj])
+          path.append(pk)
+          ci, cj = cj, pk
+      path.reverse()
+
+      # Deduplicate (preserving order)
+      seen, unique = set(), []
+      for idx in path:
+          if idx not in seen:
+              seen.add(idx)
+              unique.append(idx)
+
+      if len(unique) < CFG["min_chain_nodes"]:
+          return []
+      return [anchors[i] for i in unique]
+
+
+
+def run_pipeline(image_bgr):
+    raw_mask = segment_dark_marker(image_bgr)
+    single_path_mask, skeleton_vis = extract_single_path_mask(raw_mask)
+    return {
+        "raw_mask": raw_mask,
+        "skeleton": skeleton_vis,
+        "single_path_mask": single_path_mask,
+    }
+
+
+print("Core functions ready.")
+
+=== Cell 4 ===
+# ------ Set paths and run ------
+
+# you need to change the paths below to accomodate your file structure!
+INPUT_IMAGE_PATH = "../left_image_selected/41/20.png"
+OUTPUT_MASK_PATH = "./test_img/test_range/output/6.43.png"
+
+
+img_bgr = cv2.imread(INPUT_IMAGE_PATH, cv2.IMREAD_COLOR)
+if img_bgr is None:
+    raise FileNotFoundError(f"Could not read image at: {INPUT_IMAGE_PATH}")
+
+results = run_pipeline(img_bgr)
+raw_mask = results["raw_mask"]
+skel = results["skeleton"]
+final_mask = results["single_path_mask"]
+
+# save final binary mask (same width/height as input)
+ok = cv2.imwrite(OUTPUT_MASK_PATH, final_mask)
+if not ok:
+    raise RuntimeError(f"Failed to save mask to: {OUTPUT_MASK_PATH}")
+
+print(f"Input image shape: {img_bgr.shape[:2]} (H, W)")
+print(f"Output mask shape: {final_mask.shape} (H, W)")
+print(f"Saved binary mask to: {OUTPUT_MASK_PATH}")
+
+=== Cell 5 ===
+      # ------ Visualization ------
+
+img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+
+overlay = img_rgb.copy()
+overlay[final_mask > 0] = [255, 0, 0]  # red overlay on extracted trajectory
+
+plt.figure(figsize=(16, 4))
+
+plt.subplot(1, 4, 1)
+plt.title("Input")
+plt.imshow(img_rgb)
+plt.axis("off")
+
+plt.subplot(1, 4, 2)
+plt.title("Raw Marker Mask")
+plt.imshow(raw_mask, cmap="gray")
+plt.axis("off")
+
+plt.subplot(1, 4, 3)
+plt.title("Skeleton")
+plt.imshow(skel, cmap="gray")
+plt.axis("off")
+
+plt.subplot(1, 4, 4)
+plt.title("Final Single-Path Mask")
+plt.imshow(overlay)
+plt.axis("off")
+
+plt.tight_layout()
+plt.show()
+
+=== Cell 6 ===
+#test individual function
+import cv2
+import numpy as np
+from skimage.morphology import skeletonize
+
+def show(title, img):
+    if img is None:
+        print(title, "is None")
+        return
+    if img.dtype == bool:
+        img = img.astype(np.uint8) * 255
+    cv2.namedWindow(title, cv2.WINDOW_NORMAL)
+    cv2.imshow(title, img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+def draw_points(img, pts, color=(0,255,0), r=3):
+    vis = img.copy()
+    for x, y in pts:
+        cv2.circle(vis, (int(x), int(y)), r, color, -1)
+    return vis
+#1
+def test_visualize_enhance_contrast(img_bgr):
+    out = enhance_contrast_bgr(img_bgr)
+    show("enhance_contrast_bgr", out)
+
+#2
+def test_visualize_filter_components(img_bgr):
+    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    _, binary = cv2.threshold(gray, 120, 255, cv2.THRESH_BINARY)
+
+    out = filter_components(binary, CFG["min_component_area"], CFG["max_component_area_ratio"])
+
+    show("filter input", binary)
+    show("filter output", out)
+#3
+def test_visualize_tissue_roi(img_bgr):
+    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+    hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+
+    #roi = build_tissue_roi(lab[:,:,0], hsv[:,:,2], hsv[:,:,0])
+    roi = build_tissue_roi(lab[:,:,0], hsv[:,:,2], hsv[:,:,0], hsv[:,:,1])
+    show("tissue_roi", roi)
+#4
+def test_visualize_segment_dark_marker(img_bgr):
+    mask = segment_dark_marker(img_bgr)
+    show("segment_dark_marker", mask)
+#5
+def test_visualize_skeleton_to_graph(img_bgr):
+    mask = segment_dark_marker(img_bgr)
+    skel = skeletonize(mask > 0)
+
+    G = skeleton_to_graph(skel)
+
+    vis = np.zeros((*skel.shape, 3), dtype=np.uint8)
+    for y, x in G.nodes():
+        vis[y, x] = (0,255,0)
+
+    show("skeleton nodes", vis)
+    print("nodes:", G.number_of_nodes(), "edges:", G.number_of_edges())
+
+def test_visualize_prune_short_branches(img_bgr):
+    mask = segment_dark_marker(img_bgr)
+    skel = skeletonize(mask > 0)
+
+    G = skeleton_to_graph(skel)
+    G2 = prune_short_branches(G.copy(), min_len=10)
+
+    vis_before = np.zeros((*skel.shape,3), np.uint8)
+    for y,x in G.nodes():
+        vis_before[y,x]=(0,0,255)
+
+    vis_after = np.zeros((*skel.shape,3), np.uint8)
+    for y,x in G2.nodes():
+        vis_after[y,x]=(0,255,0)
+
+    show("before prune", vis_before)
+    show("after prune", vis_after)
+
+#7
+def test_visualize_longest_graph_path(img_bgr):
+    mask = segment_dark_marker(img_bgr)
+    skel = skeletonize(mask > 0)
+
+    path = _extract_longest_path_from_graph(skel)
+    show("longest path", path)
+
+#8
+def test_visualize_component_anchors(img_bgr):
+    mask = segment_dark_marker(img_bgr)
+    anchors, labels = _extract_component_anchors(mask)
+
+    pts = [a["point"] for a in anchors]
+    vis = draw_points(img_bgr, pts, (0,255,0), 4)
+
+    show("component anchors", vis)
+    print("num anchors:", len(anchors))
+
+#9
+def test_visualize_principal_axis(img_bgr):
+    mask = segment_dark_marker(img_bgr)
+    anchors, _ = _extract_component_anchors(mask)
+
+    pts = np.array([a["point"] for a in anchors])
+    mean, u, n = _compute_principal_axis(pts)
+
+    vis = img_bgr.copy()
+
+    p1 = mean - 200*u
+    p2 = mean + 200*u
+    cv2.line(vis, tuple(p1.astype(int)), tuple(p2.astype(int)), (0,255,0), 2)
+
+    p3 = mean - 200*n
+    p4 = mean + 200*n
+    cv2.line(vis, tuple(p3.astype(int)), tuple(p4.astype(int)), (255,0,0), 2)
+
+    show("principal axis (green) + normal (blue)", vis)
+
+#10
+def test_visualize_longest_chain(img_bgr):
+    mask = segment_dark_marker(img_bgr)
+    anchors, _ = _extract_component_anchors(mask)
+
+    chain = _longest_smooth_chain(anchors)
+
+    vis = img_bgr.copy()
+
+    for c in chain:
+        x,y = c["point"]
+        cv2.circle(vis,(int(x),int(y)),4,(0,255,0),-1)
+
+    for a,b in zip(chain[:-1], chain[1:]):
+        cv2.line(vis,
+                 tuple(a["point"].astype(int)),
+                 tuple(b["point"].astype(int)),
+                 (0,255,255),2)
+
+    show("longest smooth chain", vis)
+
+#11
+def test_visualize_single_path_mask(img_bgr):
+    mask = segment_dark_marker(img_bgr)
+    single, skel = extract_single_path_mask(mask)
+
+    show("input mask", mask)
+    show("skeleton", skel)
+    show("single path", single)
+
+=== Cell 7 ===
+INPUT_IMAGE_PATH = "../left_image_selected/10/144.png"
+img_bgr = cv2.imread(INPUT_IMAGE_PATH, cv2.IMREAD_COLOR)
+if img_bgr is None:
+    raise FileNotFoundError(f"Could not read image at: {INPUT_IMAGE_PATH}")
+test_visualize_tissue_roi(img_bgr)
+#test_visualize_segment_dark_marker(img_bgr)
+
+
+=== Cell 8 ===
+## Tuning tips for dashed/dotted lines
+
+For purple/blue marker lines (current default):
+- Tighten color band if too much noise: increase `marker_s_min`, increase `marker_v_min`, narrow `marker_h_min`/`marker_h_max`
+- Loosen color band if line is missed: decrease `marker_s_min` and slightly widen hue range
+
+For black marker datasets:
+- Set `use_color_marker=False` to force dark-ink mode
+- Then tune `lab_l_max`, `hsv_v_max`, and `hsv_s_max`
+
+If dashed line pieces are not connected:
+- Increase `close_kernel` (e.g., 13 or 15)
+- Increase `close_iters` (e.g., 2)
+- Increase `max_link_dist` and `max_proj_gap` moderately
+
+If the path makes sudden jumps:
+- Decrease `max_link_dist`
+- Decrease `max_proj_gap`
+- Decrease `max_lateral_dev`
+
+If branches/noisy side paths remain:
+- Increase `prune_branch_length`
+- Increase `min_component_area`
+
+If the path is too thin or too thick:
+- Adjust `line_thickness` and `link_thickness`
+
+The output is always a same-size binary mask (`uint8`, values 0/255).
+
+=== Cell 9 ===
+# --- Interactive multi-group polygon labeling with zoom ---
+img_bgr = cv2.imread("../left_image_selected/38/54.png")
+img = enhance_contrast_bgr(img_bgr)
+hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+h = hsv[:,:,0]; s = hsv[:,:,1]; v = hsv[:,:,2]
+l = lab[:,:,0]; a_ch = lab[:,:,1]; b_ch = lab[:,:,2]
+roi = build_tissue_roi(l, v, h, s)
+
+# Groups: each group has a name, color, and list of polygons
+# Press 1-9 to switch active group. Default groups below — edit as needed.
+groups = {
+    1: {'name': 'ink',   'color': (0, 255, 0),   'polys': []},
+    2: {'name': 'metal', 'color': (255, 0, 0),   'polys': []},
+    3: {'name': 'meat',  'color': (0, 255, 255), 'polys': []},
+    4: {'name': 'cloth', 'color': (255, 0, 255), 'polys': []},
+}
+active_group = 1
+current_poly = []
+
+img_h, img_w = img.shape[:2]
+DISP_W, DISP_H = 1280, 720
+state = {
+    'zoom': 1.0,
+    'cx': img_w // 2,
+    'cy': img_h // 2,
+    'dragging': False,
+    'drag_start': None,
+    'drag_cx': 0,
+    'drag_cy': 0,
+}
+
+def get_view():
+    vw = min(int(img_w / state['zoom']), img_w)
+    vh = min(int(img_h / state['zoom']), img_h)
+    x1 = max(0, min(state['cx'] - vw // 2, img_w - vw))
+    y1 = max(0, min(state['cy'] - vh // 2, img_h - vh))
+    return x1, y1, x1 + vw, y1 + vh
+
+def disp_to_img(dx, dy):
+    x1, y1, x2, y2 = get_view()
+    ix = x1 + int(dx * (x2 - x1) / DISP_W)
+    iy = y1 + int(dy * (y2 - y1) / DISP_H)
+    return max(0, min(ix, img_w - 1)), max(0, min(iy, img_h - 1))
+
+def redraw():
+    vis = img.copy()
+    # Draw all confirmed polygons with group colors
+    for gid, grp in groups.items():
+        for i, poly in enumerate(grp['polys']):
+            cv2.polylines(vis, [poly], True, grp['color'], 2)
+            pcx = int(np.mean(poly[:, 0, 0]))
+            pcy = int(np.mean(poly[:, 0, 1]))
+            cv2.putText(vis, f"{grp['name']}:{i}", (pcx, pcy - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, grp['color'], 1)
+    # Draw current in-progress polygon in active group color
+    clr = groups[active_group]['color']
+    for j, pt in enumerate(current_poly):
+        cv2.circle(vis, pt, 3, clr, -1)
+        if j > 0:
+            cv2.line(vis, current_poly[j - 1], current_poly[j], clr, 1)
+    # HUD: show active group
+    cv2.putText(vis, f"Active: [{active_group}] {groups[active_group]['name']}",
+                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, clr, 2)
+    # Crop to view
+    x1, y1, x2, y2 = get_view()
+    crop = vis[y1:y2, x1:x2]
+    return cv2.resize(crop, (DISP_W, DISP_H), interpolation=cv2.INTER_LINEAR)
+
+def mouse_cb(event, x, y, flags, param):
+    if event == cv2.EVENT_LBUTTONDOWN and not state['dragging']:
+        ix, iy = disp_to_img(x, y)
+        current_poly.append((ix, iy))
+        cv2.imshow(win_name, redraw())
+    elif event == cv2.EVENT_MOUSEWHEEL:
+        ix, iy = disp_to_img(x, y)
+        if flags > 0:
+            state['zoom'] = min(state['zoom'] * 1.3, 20.0)
+        else:
+            state['zoom'] = max(state['zoom'] / 1.3, 1.0)
+        state['cx'], state['cy'] = ix, iy
+        cv2.imshow(win_name, redraw())
+    elif event == cv2.EVENT_RBUTTONDOWN:
+        state['dragging'] = True
+        state['drag_start'] = (x, y)
+        state['drag_cx'] = state['cx']
+        state['drag_cy'] = state['cy']
+    elif event == cv2.EVENT_MOUSEMOVE and state['dragging']:
+        dx = x - state['drag_start'][0]
+        dy = y - state['drag_start'][1]
+        vw = int(img_w / state['zoom'])
+        vh = int(img_h / state['zoom'])
+        state['cx'] = state['drag_cx'] - int(dx * vw / DISP_W)
+        state['cy'] = state['drag_cy'] - int(dy * vh / DISP_H)
+        state['cx'] = max(0, min(state['cx'], img_w))
+        state['cy'] = max(0, min(state['cy'], img_h))
+        cv2.imshow(win_name, redraw())
+    elif event == cv2.EVENT_RBUTTONUP:
+        state['dragging'] = False
+
+win_name = "Multi-Group Labeling"
+cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
+cv2.resizeWindow(win_name, DISP_W, DISP_H)
+cv2.setMouseCallback(win_name, mouse_cb)
+cv2.imshow(win_name, redraw())
+
+print("=== CONTROLS ===")
+print("  1-4          : switch active group (1=ink, 2=metal, 3=meat, 4=cloth)")
+print("  Left-click   : place polygon point")
+print("  ENTER/SPACE  : confirm polygon")
+print("  Scroll wheel : zoom in/out")
+print("  Right-drag   : pan")
+print("  'c'          : cancel current polygon")
+print("  'z'          : undo last polygon in active group")
+print("  'r'          : reset view")
+print("  'q'/ESC      : done")
+
+while True:
+    key = cv2.waitKey(0) & 0xFF
+    if key == ord('q') or key == 27:
+        if len(current_poly) > 0:
+            print("  (Discarded unfinished polygon)")
+        break
+    elif key in [ord('1'), ord('2'), ord('3'), ord('4')]:
+        if len(current_poly) > 0:
+            print("  (Discarded unfinished polygon for previous group)")
+            current_poly.clear()
+        active_group = key - ord('0')
+        print(f"  Switched to group [{active_group}] {groups[active_group]['name']}")
+        cv2.imshow(win_name, redraw())
+    elif key == 13 or key == 32:
+        if len(current_poly) >= 3:
+            poly = np.array(current_poly, dtype=np.int32).reshape(-1, 1, 2)
+            groups[active_group]['polys'].append(poly)
+            idx = len(groups[active_group]['polys']) - 1
+            print(f"  Confirmed {groups[active_group]['name']} #{idx}: "
+                  f"{len(current_poly)} pts, area={cv2.contourArea(poly):.0f}")
+            current_poly.clear()
+            cv2.imshow(win_name, redraw())
+        else:
+            print("  Need >= 3 points.")
+    elif key == ord('c'):
+        current_poly.clear()
+        cv2.imshow(win_name, redraw())
+        print("  Cancelled current polygon.")
+    elif key == ord('z'):
+        if groups[active_group]['polys']:
+            groups[active_group]['polys'].pop()
+            current_poly.clear()
+            cv2.imshow(win_name, redraw())
+            print(f"  Undid last {groups[active_group]['name']} polygon.")
+    elif key == ord('r'):
+        state['zoom'] = 1.0
+        state['cx'] = img_w // 2
+        state['cy'] = img_h // 2
+        cv2.imshow(win_name, redraw())
+    elif key == ord('+') or key == ord('='):
+        state['zoom'] = min(state['zoom'] * 1.5, 20.0)
+        cv2.imshow(win_name, redraw())
+    elif key == ord('-'):
+        state['zoom'] = max(state['zoom'] / 1.5, 1.0)
+        cv2.imshow(win_name, redraw())
+
+cv2.destroyAllWindows()
+
+print(f"\n=== COLLECTED REGIONS ===")
+for gid, grp in groups.items():
+    print(f"  [{gid}] {grp['name']}: {len(grp['polys'])} polygons")
+    for i, poly in enumerate(grp['polys']):
+        print(f"      #{i}: {len(poly)} vertices, area={cv2.contourArea(poly):.0f} px")
+
+
+=== Cell 10 ===
+# --- Snippet 2: Multi-group analysis (per-group stats + pairwise) ---
+import cv2, numpy as np
+
+hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+h, s, v = hsv[:,:,0], hsv[:,:,1], hsv[:,:,2]
+l, a, b = lab[:,:,0], lab[:,:,1], lab[:,:,2]
+
+channels = {'H': h, 'S': s, 'V': v, 'L': l, 'a': a, 'b': b}
+
+# Collect pixels per group
+group_pixels = {}   # name -> dict of channel arrays
+for gid, gdata in groups.items():
+    if not gdata['polys']:
+        continue
+    mask = np.zeros(img.shape[:2], dtype=np.uint8)
+    for poly in gdata['polys']:
+        pts = np.array(poly, dtype=np.int32)
+        cv2.fillPoly(mask, [pts], 255)
+    idx = mask == 255
+    if idx.sum() == 0:
+        continue
+    group_pixels[gdata['name']] = {ch: arr[idx] for ch, arr in channels.items()}
+
+# --- Part 1: Per-group summary ---
+print("=" * 72)
+print("PER-GROUP SUMMARY")
+print("=" * 72)
+ch_names = ['H', 'S', 'V', 'L', 'a', 'b']
+for name, pix in group_pixels.items():
+    n = len(pix['H'])
+    print(f"\n  {name.upper()} ({n} pixels)")
+    print(f"  {'Chan':>4}   {'Mean':>7}  {'Std':>7}  {'Min':>5}  {'Max':>5}")
+    print(f"  {'-'*40}")
+    for ch in ch_names:
+        arr = pix[ch]
+        print(f"  {ch:>4}   {arr.mean():7.1f}  {arr.std():7.1f}  {arr.min():5d}  {arr.max():5d}")
+
+# --- Part 2: Pairwise comparison ---
+names = list(group_pixels.keys())
+if len(names) >= 2:
+    print("\n" + "=" * 72)
+    print("PAIRWISE COMPARISON (mean_A - mean_B)")
+    print("=" * 72)
+    for i in range(len(names)):
+        for j in range(i + 1, len(names)):
+            nA, nB = names[i], names[j]
+            print(f"\n  {nA.upper()} vs {nB.upper()}")
+            print(f"  {'Chan':>4}   {nA:>10}  {nB:>10}  {'Delta':>8}  {'Sep?':>5}")
+            print(f"  {'-'*50}")
+            for ch in ch_names:
+                mA = group_pixels[nA][ch].mean()
+                mB = group_pixels[nB][ch].mean()
+                sA = group_pixels[nA][ch].std()
+                sB = group_pixels[nB][ch].std()
+                delta = mA - mB
+                # separable if gap between means > sum of stds
+                gap = abs(delta) - (sA + sB)
+                sep = "YES" if gap > 0 else "no"
+                print(f"  {ch:>4}   {mA:10.1f}  {mB:10.1f}  {delta:+8.1f}  {sep:>5}")
+
+
+=== Cell 11 ===
+# ============================================================
+# ML Dark-Mode Threshold Learning v3  (run after cells 2 + 3)
+# ============================================================
+import cv2, numpy as np, os, glob
+from scipy.optimize import differential_evolution
+
+# ---------- CONFIG ----------
+FOLDER    = r"../left_image_selected/MLFolder"
+FN_RAD    = 12
+BG_N      = 1500
+PW, PH    = 640, 720
+MAX_PX    = 50000
+
+CUR_V_MAX = 120;  CUR_S_MIN = 190;  CUR_H_MIN = 15;  CUR_L_MAX = 70
+MIN_REC   = 0.90
+# -----------------------------
+
+paths = sorted(glob.glob(os.path.join(FOLDER, "*.png")))
+print(f"Found {len(paths)} images")
+all_ink, all_noink = [], []
+
+# ---- viewport ----
+vp = dict(z=1.0,cx=0,cy=0,drag=False,ds=None,dcx=0,dcy=0,iw=1,ih=1,fn=False)
+def vp_reset(w,h): vp.update(z=1.0,cx=w//2,cy=h//2,drag=False,iw=w,ih=h,fn=False)
+def vp_rect():
+    w,h=vp['iw'],vp['ih']; vw,vh=min(int(w/vp['z']),w),min(int(h/vp['z']),h)
+    x1=max(0,min(vp['cx']-vw//2,w-vw)); y1=max(0,min(vp['cy']-vh//2,h-vh))
+    return x1,y1,x1+vw,y1+vh
+def d2i(dx,dy):
+    px=dx%PW; x1,y1,x2,y2=vp_rect()
+    return (max(0,min(x1+int(px*(x2-x1)/PW),vp['iw']-1)),
+            max(0,min(y1+int(dy*(y2-y1)/PH),vp['ih']-1)))
+
+# ================ PER-IMAGE LABELING ================
+for img_idx, path in enumerate(paths):
+    raw = cv2.imread(path, cv2.IMREAD_COLOR)
+    if raw is None: print(f"  Skip: {path}"); continue
+    fname = os.path.basename(path)
+    img   = enhance_contrast_bgr(raw)
+    hsv   = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    lab   = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    hc,sc,vc,lc = hsv[:,:,0],hsv[:,:,1],hsv[:,:,2],lab[:,:,0]
+    ih_,iw_ = img.shape[:2]
+    roi   = build_tissue_roi(lc,vc,hc,sc)
+
+    # ---- raw mask with morphology (same pipeline as segment_dark_marker) ----
+    md = ((vc<=CUR_V_MAX)&(sc>=CUR_S_MIN)&(hc>=CUR_H_MIN)&(lc<=CUR_L_MAX))
+    md = cv2.bitwise_and((md.astype(np.uint8)*255), roi)
+    k_open  = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(CFG["open_kernel"],CFG["open_kernel"]))
+    k_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(CFG["close_kernel"],CFG["close_kernel"]))
+    md = cv2.morphologyEx(md, cv2.MORPH_OPEN, k_open)
+    md = cv2.morphologyEx(md, cv2.MORPH_CLOSE, k_close, iterations=CFG["close_iters"])
+    md = filter_components(md, CFG["min_component_area"], CFG["max_component_area_ratio"])
+
+    nlab,labels,stats,_ = cv2.connectedComponentsWithStats(md,8)
+
+    # ---- PRE-COMPUTE overlay (once, not every redraw) ----
+    overlay = img.copy()
+    blob_mask = md > 0
+    # Vibrant orange (BGR: 0,165,255)
+    overlay[blob_mask] = (overlay[blob_mask].astype(np.int16)*4//10
+                          + np.array([0,165,255],dtype=np.int16)*6//10).clip(0,255).astype(np.uint8)
+
+    tp_set=set(); fn_pts=[]; vp_reset(iw_,ih_)
+
+    def draw():
+        x1,y1,x2,y2 = vp_rect()
+        left = cv2.resize(img[y1:y2,x1:x2],(PW,PH),interpolation=cv2.INTER_LINEAR)
+        # Start from pre-computed overlay, just draw markers on top
+        vis = overlay.copy()
+        # Green fill for confirmed TP blobs
+        for lid in tp_set:
+            vis[labels==lid] = (img[labels==lid].astype(np.int16)*3//10
+                                + np.array([0,220,0],dtype=np.int16)*7//10).clip(0,255).astype(np.uint8)
+        for fx,fy in fn_pts:
+            cv2.circle(vis,(fx,fy),FN_RAD,(0,255,255),2)
+            cv2.drawMarker(vis,(fx,fy),(0,255,255),cv2.MARKER_CROSS,10,2)
+        right = cv2.resize(vis[y1:y2,x1:x2],(PW,PH),interpolation=cv2.INTER_LINEAR)
+        out = np.hstack([left,right])
+        tag="FN" if vp['fn'] else "TP"
+        cv2.putText(out,f"[{img_idx+1}/{len(paths)}] {fname}  TP:{len(tp_set)} FN:{len(fn_pts)} det:{nlab-1}  Mode:{tag}",
+                    (10,30),cv2.FONT_HERSHEY_SIMPLEX,0.65,(255,255,255),2)
+        cv2.putText(out,"f=toggle a=allTP n=next s=skip q=quit z=undoFN r=reset",
+                    (10,58),cv2.FONT_HERSHEY_SIMPLEX,0.48,(200,200,200),1)
+        cv2.putText(out,"ORIGINAL",(PW//2-50,PH-12),cv2.FONT_HERSHEY_SIMPLEX,0.6,(255,255,0),1)
+        cv2.putText(out,"DETECTION",(PW+PW//2-55,PH-12),cv2.FONT_HERSHEY_SIMPLEX,0.6,(0,255,0),1)
+        return out
+
+    def on_mouse(ev,x,y,flags,_):
+        if ev==cv2.EVENT_LBUTTONDOWN and not vp['drag']:
+            ix,iy=d2i(x,y)
+            if vp['fn']:
+                fn_pts.append((ix,iy)); print(f"    FN at ({ix},{iy})")
+            else:
+                lid=labels[iy,ix]
+                if lid>0:
+                    if lid in tp_set: tp_set.discard(lid); print(f"    Un-marked #{lid}")
+                    else: tp_set.add(lid); print(f"    TP #{lid} area={stats[lid,cv2.CC_STAT_AREA]}")
+            cv2.imshow(W,draw())
+        elif ev==cv2.EVENT_MOUSEWHEEL:
+            ix,iy=d2i(x,y)
+            vp['z']=min(vp['z']*1.3,20) if flags>0 else max(vp['z']/1.3,1)
+            vp['cx'],vp['cy']=ix,iy; cv2.imshow(W,draw())
+        elif ev==cv2.EVENT_RBUTTONDOWN:
+            vp.update(drag=True,ds=(x,y),dcx=vp['cx'],dcy=vp['cy'])
+        elif ev==cv2.EVENT_MOUSEMOVE and vp['drag']:
+            dx_,dy_=x-vp['ds'][0],y-vp['ds'][1]
+            vp['cx']=max(0,min(vp['dcx']-int(dx_*iw_/vp['z']/PW),iw_))
+            vp['cy']=max(0,min(vp['dcy']-int(dy_*ih_/vp['z']/PH),ih_))
+            cv2.imshow(W,draw())
+        elif ev==cv2.EVENT_RBUTTONUP: vp['drag']=False
+
+    W="ML Labeling"
+    cv2.namedWindow(W,cv2.WINDOW_NORMAL); cv2.resizeWindow(W,2*PW,PH)
+    cv2.setMouseCallback(W,on_mouse); cv2.imshow(W,draw())
+
+    action='next'
+    while True:
+        k=cv2.waitKey(0)&0xFF
+        if   k==ord('q') or k==27: action='quit'; break
+        elif k==ord('n') or k==13: break
+        elif k==ord('s'): action='skip'; break
+        elif k==ord('f'):
+            vp['fn']=not vp['fn']; print(f"    Mode->{'FN' if vp['fn'] else 'TP'}"); cv2.imshow(W,draw())
+        elif k==ord('a'):
+            tp_set=set(range(1,nlab)); print(f"    All {nlab-1}->TP"); cv2.imshow(W,draw())
+        elif k==ord('z') and fn_pts: fn_pts.pop(); cv2.imshow(W,draw())
+        elif k==ord('r'): vp_reset(iw_,ih_); cv2.imshow(W,draw())
+    cv2.destroyAllWindows()
+
+    if action=='skip': print(f"  Skipped {fname}"); continue
+
+    # ---- collect raw pixels (pre-morphology channels) for learning ----
+    feat=np.stack([hc,sc,vc,lc],axis=-1)
+    for lid in tp_set:            all_ink.append(feat[labels==lid])
+    yy,xx=np.ogrid[:ih_,:iw_]
+    for fx,fy in fn_pts:
+        circ=((xx-fx)**2+(yy-fy)**2<=FN_RAD**2)&(roi>0)
+        if circ.any(): all_ink.append(feat[circ])
+    for lid in range(1,nlab):
+        if lid not in tp_set: all_noink.append(feat[labels==lid])
+    bg_mask=(roi>0)&(md==0); bg_idx=np.where(bg_mask.ravel())[0]
+    if len(bg_idx)>BG_N: bg_idx=np.random.choice(bg_idx,BG_N,replace=False)
+    if len(bg_idx)>0: all_noink.append(feat.reshape(-1,4)[bg_idx])
+
+    print(f"  [{img_idx+1}/{len(paths)}] {fname}: TP={len(tp_set)} FN={len(fn_pts)} FP={nlab-1-len(tp_set)}")
+    if action=='quit': print("Stopped."); break
+
+# ================ AGGREGATE ================
+if not all_ink: raise RuntimeError("No ink pixels collected!")
+ink   = np.concatenate(all_ink).astype(np.float64)
+noink = np.concatenate(all_noink).astype(np.float64) if all_noink else np.zeros((0,4),np.float64)
+print(f"\n{'='*60}")
+print(f"COLLECTED: {len(ink)} ink px,  {len(noink)} non-ink px")
+
+rng=np.random.default_rng(42)
+ink_opt   = ink[rng.choice(len(ink),min(MAX_PX,len(ink)),replace=False)]
+noink_opt = noink[rng.choice(len(noink),min(MAX_PX,len(noink)),replace=False)] if len(noink)>0 else noink
+
+# ================ DIFFERENTIAL EVOLUTION ================
+def cost(params):
+    h_cen,h_hw = params[0],params[1]
+    s_lo,s_hi = min(params[2],params[3]),max(params[2],params[3])
+    v_lo,v_hi = min(params[4],params[5]),max(params[4],params[5])
+    l_lo,l_hi = min(params[6],params[7]),max(params[6],params[7])
+    hd=np.minimum(np.abs(ink_opt[:,0]-h_cen),180-np.abs(ink_opt[:,0]-h_cen))
+    im=(hd<=h_hw)&(ink_opt[:,1]>=s_lo)&(ink_opt[:,1]<=s_hi)& \
+       (ink_opt[:,2]>=v_lo)&(ink_opt[:,2]<=v_hi)&(ink_opt[:,3]>=l_lo)&(ink_opt[:,3]<=l_hi)
+    tp=im.sum(); rec=tp/max(1,len(ink_opt))
+    if rec<MIN_REC: return 2.0+(MIN_REC-rec)*10
+    if len(noink_opt)>0:
+        hdn=np.minimum(np.abs(noink_opt[:,0]-h_cen),180-np.abs(noink_opt[:,0]-h_cen))
+        nm=(hdn<=h_hw)&(noink_opt[:,1]>=s_lo)&(noink_opt[:,1]<=s_hi)& \
+           (noink_opt[:,2]>=v_lo)&(noink_opt[:,2]<=v_hi)&(noink_opt[:,3]>=l_lo)&(noink_opt[:,3]<=l_hi)
+        fp=nm.sum()
+    else: fp=0
+    prec=tp/max(1,tp+fp); f1=2*prec*rec/max(1e-6,prec+rec)
+    return -f1
+
+de_bounds=[(0,179),(0,90),(0,255),(0,255),(0,255),(0,255),(0,255),(0,255)]
+print(f"\nRunning differential evolution (8 params)...")
+result=differential_evolution(cost,de_bounds,seed=42,maxiter=500,popsize=20,tol=1e-8,disp=True)
+print(f"Converged: {result.nit} generations, {result.nfev} evaluations")
+
+h_cen,h_hw=int(round(result.x[0])),int(round(result.x[1]))
+s_lo,s_hi=int(round(min(result.x[2],result.x[3]))),int(round(max(result.x[2],result.x[3])))
+v_lo,v_hi=int(round(min(result.x[4],result.x[5]))),int(round(max(result.x[4],result.x[5])))
+l_lo,l_hi=int(round(min(result.x[6],result.x[7]))),int(round(max(result.x[6],result.x[7])))
+h_lo=(h_cen-h_hw)%180; h_hi=(h_cen+h_hw)%180; h_wraps=h_lo>h_hi
+
+# Evaluate on full data
+hd=np.minimum(np.abs(ink[:,0]-h_cen),180-np.abs(ink[:,0]-h_cen))
+im_f=(hd<=h_hw)&(ink[:,1]>=s_lo)&(ink[:,1]<=s_hi)& \
+     (ink[:,2]>=v_lo)&(ink[:,2]<=v_hi)&(ink[:,3]>=l_lo)&(ink[:,3]<=l_hi)
+tp=im_f.sum(); fn=len(ink)-tp
+if len(noink)>0:
+    hdn=np.minimum(np.abs(noink[:,0]-h_cen),180-np.abs(noink[:,0]-h_cen))
+    nm_f=(hdn<=h_hw)&(noink[:,1]>=s_lo)&(noink[:,1]<=s_hi)& \
+         (noink[:,2]>=v_lo)&(noink[:,2]<=v_hi)&(noink[:,3]>=l_lo)&(noink[:,3]<=l_hi)
+    fp=nm_f.sum()
+else: fp=0
+prec=tp/max(1,tp+fp); rec=tp/max(1,tp+fn); f1=2*prec*rec/max(1e-6,prec+rec)
+
+# ================ OUTPUT ================
+print(f"\n{'='*60}")
+print("LEARNED DARK MODE PARAMETERS")
+print(f"{'='*60}")
+print(f"  Hue center={h_cen} halfwidth={h_hw} -> [{h_lo},{h_hi}]{' WRAP' if h_wraps else ''}")
+parts=[]
+if h_wraps:
+    print(f"  H: (h >= {h_lo}) | (h <= {h_hi})"); parts.append(f"((h >= {h_lo}) | (h <= {h_hi}))")
+else:
+    sub=[]
+    if h_lo>0:   sub.append(f"(h >= {h_lo})"); print(f"  H lo: {h_lo}")
+    if h_hi<179: sub.append(f"(h <= {h_hi})"); print(f"  H hi: {h_hi}")
+    if sub: parts.append(" & ".join(sub))
+for cn,lo,hi,mx in [('S',s_lo,s_hi,255),('V',v_lo,v_hi,255),('L',l_lo,l_hi,255)]:
+    c=cn.lower(); sub=[]
+    if lo>0:  sub.append(f"({c} >= {lo})"); print(f"  {cn} lo: {lo}")
+    if hi<mx: sub.append(f"({c} <= {hi})"); print(f"  {cn} hi: {hi}")
+    if sub: parts.append(" & ".join(sub))
+    else: print(f"  {cn}: no constraint")
+print(f"\n  Precision={prec:.4f}  Recall={rec:.4f}  F1={f1:.4f}")
+print(f"  TP={tp}  FP={fp}  FN={fn}")
+print(f"\nPaste into segment_dark_marker mask_dark:")
+print(f"    mask_dark = ({' & '.join(parts)})")
+
+

@@ -1,0 +1,603 @@
+
+=== 8.118 ===
+Processing 8/118.png ...
+  [8.118] shadow suppression (median_area=74, cluster_thr=41472 px):
+    blob# 0  area=  949  sol=0.32  pt=(1818,30)  SHADOW(B1)
+    blob# 1  area=   35  sol=0.78  pt=(1904,64)  SHADOW(border)
+    blob# 2  area=   59  sol=1.10  pt=(1904,84)  SHADOW(border)
+    blob# 3  area=   48  sol=0.73  pt=(1902,104)  SHADOW(border)
+    blob# 4  area=   73  sol=0.75  pt=(1919,123)  SHADOW(border)
+    blob# 5  area=  153  sol=0.68  pt=(1859,137)  keep
+    blob# 6  area=   32  sol=1.28  pt=(1917,158)  SHADOW(border)
+    blob# 7  area=  452  sol=0.90  pt=(1911,204)  keep
+    blob# 8  area=  264  sol=0.83  pt=(1866,222)  keep
+    blob# 9  area=   51  sol=1.05  pt=(1906,250)  SHADOW(border)
+    blob#10  area=  119  sol=0.44  pt=(1876,266)  keep
+    blob#11  area=   80  sol=0.57  pt=(1869,291)  keep
+    blob#12  area=  125  sol=0.98  pt=(1891,297)  SHADOW(border)
+    blob#13  area=  159  sol=0.73  pt=(1867,329)  keep
+    blob#14  area=   58  sol=1.17  pt=(631,373)  keep
+    blob#15  area=   56  sol=0.99  pt=(1889,371)  keep
+    blob#16  area=  612  sol=0.45  pt=(1851,419)  keep
+    blob#17  area= 2569  sol=0.89  pt=(1017,451)  keep
+    blob#18  area=   53  sol=0.68  pt=(566,448)  keep
+    blob#19  area=  181  sol=0.81  pt=(1855,455)  keep
+    blob#20  area=   43  sol=0.97  pt=(1853,478)  keep
+    blob#21  area=   30  sol=1.09  pt=(1873,479)  keep
+    blob#22  area=   48  sol=0.76  pt=(1867,501)  keep
+    blob#23  area=  132  sol=0.54  pt=(1855,559)  keep
+    blob#24  area= 2498  sol=0.70  pt=(983,614)  keep
+    blob#25  area=   75  sol=0.89  pt=(648,584)  keep
+    blob#26  area=   34  sol=1.28  pt=(1843,611)  keep
+    blob#27  area=  429  sol=0.87  pt=(617,647)  keep
+    blob#28  area=   94  sol=0.63  pt=(1822,644)  keep
+    blob#29  area=  947  sol=0.61  pt=(1787,678)  keep
+    blob#30  area=  734  sol=0.54  pt=(557,726)  keep
+    blob#31  area=  155  sol=0.60  pt=(1765,717)  keep
+    blob#32  area= 4787  sol=0.82  pt=(1003,757)  keep
+    blob#33  area=   27  sol=1.50  pt=(590,731)  keep
+    blob#34  area=   70  sol=0.98  pt=(1125,820)  keep
+    blob#35  area=   52  sol=1.17  pt=(1030,828)  SHADOW(linearity=2.7)
+    blob#36  area=   49  sol=0.97  pt=(1209,836)  keep
+    blob#37  area=   30  sol=1.28  pt=(1043,852)  keep
+    blob#38  area=   33  sol=0.65  pt=(1181,860)  keep
+    blob#39  area=   25  sol=1.47  pt=(274,1054)  SHADOW(border)
+  [8.118] trim head ep: area=153 angle=57�
+  [8.118] chain (9 blobs):
+    area=  452  pt=(1911,204)
+    area=  159  pt=(1867,329)
+    area=  612  pt=(1851,419)
+    area=  947  pt=(1787,678)
+    area=   49  pt=(1209,836)
+    area=   70  pt=(1125,820)
+    area= 4787  pt=(1003,757)
+    area= 2498  pt=(983,614)
+    area= 2569  pt=(1017,451)
+  saved: D:/University/SMARTS/Spring26/dissection_specific_scripts/dissection_specific_scripts/test_img/test_range/output/8.118.png
+
+=== 10.83 ===
+Processing 10/83.png ...
+  [10.83] shadow suppression (median_area=123, cluster_thr=41472 px):
+    blob# 0  area=   49  sol=0.89  pt=(1777,37)  keep
+    blob# 1  area=   64  sol=1.11  pt=(1741,75)  keep
+    blob# 2  area=   29  sol=1.21  pt=(1888,90)  keep
+    blob# 3  area=   43  sol=0.72  pt=(1725,111)  keep
+    blob# 4  area=   50  sol=0.83  pt=(1722,131)  keep
+    blob# 5  area=  346  sol=0.60  pt=(1742,144)  keep
+    blob# 6  area=  278  sol=0.75  pt=(1899,149)  SHADOW(border)
+    blob# 7  area=  102  sol=0.68  pt=(1891,179)  SHADOW(border)
+    blob# 8  area=  204  sol=0.55  pt=(1909,203)  SHADOW(border)
+    blob# 9  area=   38  sol=0.81  pt=(1888,210)  keep
+    blob#10  area=   88  sol=1.07  pt=(910,216)  keep
+    blob#11  area=  154  sol=0.45  pt=(1868,282)  keep
+    blob#12  area=   65  sol=0.67  pt=(1897,289)  SHADOW(border)
+    blob#13  area=  106  sol=0.60  pt=(1866,323)  keep
+    blob#14  area=  228  sol=0.49  pt=(1845,341)  keep
+    blob#15  area=  209  sol=0.67  pt=(1883,355)  keep
+    blob#16  area=  147  sol=1.01  pt=(1912,356)  SHADOW(border)
+    blob#17  area= 3708  sol=0.76  pt=(984,404)  keep
+    blob#18  area=  148  sol=0.82  pt=(1877,378)  keep
+    blob#19  area=   32  sol=0.74  pt=(1912,376)  SHADOW(border)
+    blob#20  area= 2678  sol=0.75  pt=(1075,427)  keep
+    blob#21  area=   79  sol=0.54  pt=(1818,404)  keep
+    blob#22  area=  250  sol=0.49  pt=(1864,406)  keep
+    blob#23  area=  261  sol=0.48  pt=(1881,434)  keep
+    blob#24  area= 1675  sol=0.90  pt=(746,466)  keep
+    blob#25  area=  123  sol=0.61  pt=(1791,450)  keep
+    blob#26  area= 1649  sol=0.86  pt=(818,476)  keep
+    blob#27  area= 1479  sol=0.84  pt=(890,476)  keep
+    blob#28  area=  150  sol=0.66  pt=(1020,453)  keep
+    blob#29  area=   96  sol=0.72  pt=(1759,469)  keep
+    blob#30  area=   35  sol=0.65  pt=(1779,474)  SHADOW(linearity=3.5)
+    blob#31  area= 6274  sol=0.45  pt=(1169,571)  keep
+    blob#32  area=  209  sol=0.95  pt=(1770,504)  SHADOW(linearity=2.0)
+    blob#33  area= 1306  sol=0.49  pt=(484,542)  keep
+    blob#34  area=  296  sol=0.41  pt=(1748,538)  SHADOW(linearity=1.2)
+    blob#35  area=   27  sol=1.32  pt=(1869,525)  keep
+    blob#36  area=   56  sol=0.49  pt=(1795,548)  keep
+    blob#37  area= 3588  sol=0.67  pt=(1627,600)  keep
+    blob#38  area=   38  sol=0.57  pt=(1865,580)  keep
+    blob#39  area=   86  sol=0.67  pt=(1815,662)  keep
+    blob#40  area=  521  sol=0.81  pt=(1323,668)  keep
+    blob#41  area= 1346  sol=0.48  pt=(1498,694)  keep
+    blob#42  area=   49  sol=1.09  pt=(1851,674)  keep
+    blob#43  area=  338  sol=0.69  pt=(1824,696)  keep
+    blob#44  area=   42  sol=0.89  pt=(1833,730)  keep
+    blob#45  area=   79  sol=1.06  pt=(1827,747)  keep
+    blob#46  area=   37  sol=0.99  pt=(1378,752)  SHADOW(linearity=3.1)
+    blob#47  area=  210  sol=0.71  pt=(1838,769)  keep
+    blob#48  area=  266  sol=0.48  pt=(1659,792)  keep
+    blob#49  area=   45  sol=1.17  pt=(1306,799)  keep
+    blob#50  area=  189  sol=0.87  pt=(1691,802)  keep
+    blob#51  area=   50  sol=0.56  pt=(1745,823)  keep
+    blob#52  area=   27  sol=0.65  pt=(1773,835)  keep
+    blob#53  area=   45  sol=1.17  pt=(908,884)  keep
+    blob#54  area=   57  sol=0.80  pt=(1840,883)  SHADOW(linearity=2.6)
+    blob#55  area=   87  sol=0.74  pt=(1865,900)  SHADOW(linearity=2.3)
+    blob#56  area=  212  sol=0.58  pt=(1620,984)  keep
+  [10.83] chain (8 blobs):
+    area= 1306  pt=(484,542)
+    area= 1675  pt=(746,466)
+    area= 1649  pt=(818,476)
+    area= 1479  pt=(890,476)
+    area= 3708  pt=(984,404)
+    area= 2678  pt=(1075,427)
+    area= 6274  pt=(1169,571)
+    area= 3588  pt=(1627,600)
+  saved: D:/University/SMARTS/Spring26/dissection_specific_scripts/dissection_specific_scripts/test_img/test_range/output/10.83.png
+
+=== 38.54 ===
+Processing 38/54.png ...
+  [38.54] shadow suppression (median_area=129, cluster_thr=41472 px):
+    blob# 0  area=  318  sol=0.99  pt=(487,7)  keep
+    blob# 1  area=  204  sol=0.78  pt=(1487,7)  SHADOW(border)
+    blob# 2  area=  329  sol=0.81  pt=(514,28)  keep
+    blob# 3  area=32206  sol=0.44  pt=(1668,232)  SHADOW(B0-abs)
+    blob# 4  area=   47  sol=1.01  pt=(1428,53)  keep
+    blob# 5  area=   77  sol=0.94  pt=(1643,58)  keep
+    blob# 6  area=   31  sol=0.94  pt=(1482,59)  keep
+    blob# 7  area= 2406  sol=0.59  pt=(527,121)  keep
+    blob# 8  area=  168  sol=0.54  pt=(1442,73)  keep
+    blob# 9  area=  107  sol=0.69  pt=(1478,79)  keep
+    blob#10  area=  225  sol=0.94  pt=(1886,135)  keep
+    blob#11  area=   76  sol=0.42  pt=(1843,150)  keep
+    blob#12  area=  144  sol=0.94  pt=(1499,162)  keep
+    blob#13  area=  119  sol=0.61  pt=(1893,166)  SHADOW(border)
+    blob#14  area=  317  sol=0.53  pt=(1515,193)  keep
+    blob#15  area=   96  sol=1.02  pt=(1916,204)  SHADOW(border)
+    blob#16  area=   92  sol=0.72  pt=(1627,313)  keep
+    blob#17  area=  101  sol=0.34  pt=(1872,323)  keep
+    blob#18  area=   55  sol=0.85  pt=(1848,320)  keep
+    blob#19  area=   93  sol=0.61  pt=(1794,347)  keep
+    blob#20  area=  712  sol=0.65  pt=(708,362)  keep
+    blob#21  area=   28  sol=0.45  pt=(1788,371)  keep
+    blob#22  area=  284  sol=0.77  pt=(1679,387)  SHADOW(linearity=3.2)
+    blob#23  area=   45  sol=0.58  pt=(1818,378)  keep
+    blob#24  area=   40  sol=0.98  pt=(1713,383)  SHADOW(linearity=2.1)
+    blob#25  area=  185  sol=0.93  pt=(1697,434)  SHADOW(linearity=3.6)
+    blob#26  area=   64  sol=0.74  pt=(748,466)  keep
+    blob#27  area=   60  sol=0.78  pt=(1809,477)  keep
+    blob#28  area=  533  sol=0.74  pt=(1873,498)  keep
+    blob#29  area=  347  sol=0.70  pt=(1821,507)  keep
+    blob#30  area=  247  sol=0.69  pt=(1839,535)  keep
+    blob#31  area=  146  sol=0.82  pt=(1861,567)  keep
+    blob#32  area=   36  sol=0.84  pt=(1857,587)  keep
+    blob#33  area=   87  sol=0.83  pt=(1853,610)  keep
+    blob#34  area= 3021  sol=0.74  pt=(819,651)  keep
+    blob#35  area=   47  sol=0.93  pt=(1912,642)  SHADOW(border)
+    blob#36  area=   36  sol=0.89  pt=(1892,747)  SHADOW(border)
+    blob#37  area= 1277  sol=0.59  pt=(1840,790)  SHADOW(linearity=1.5)
+    blob#38  area= 1874  sol=0.64  pt=(1906,820)  SHADOW(linearity=2.7)
+    blob#39  area=  252  sol=0.76  pt=(809,786)  SHADOW(linearity=1.9)
+    blob#40  area=   34  sol=1.05  pt=(835,785)  SHADOW(linearity=1.9)
+    blob#41  area= 1148  sol=0.62  pt=(1798,813)  SHADOW(linearity=1.6)
+    blob#42  area=  109  sol=0.79  pt=(1744,799)  SHADOW(linearity=2.0)
+    blob#43  area=  815  sol=0.75  pt=(941,834)  keep
+    blob#44  area=  144  sol=0.40  pt=(835,839)  keep
+    blob#45  area=   35  sol=0.72  pt=(785,837)  keep
+    blob#46  area=  642  sol=0.40  pt=(1843,848)  SHADOW(linearity=1.8)
+    blob#47  area=   47  sol=1.21  pt=(802,845)  keep
+    blob#48  area=   28  sol=0.97  pt=(1775,857)  SHADOW(linearity=1.3)
+    blob#49  area= 6908  sol=0.61  pt=(1690,888)  SHADOW(B2)
+    blob#50  area=   44  sol=0.63  pt=(1464,864)  keep
+    blob#51  area=   83  sol=1.07  pt=(995,867)  keep
+    blob#52  area=  251  sol=0.87  pt=(1528,874)  keep
+    blob#53  area=  129  sol=0.59  pt=(1892,891)  SHADOW(border)
+    blob#54  area=  132  sol=0.94  pt=(1914,905)  SHADOW(border)
+    blob#55  area=   88  sol=0.85  pt=(1816,902)  SHADOW(linearity=1.4)
+    blob#56  area=  444  sol=0.59  pt=(1781,957)  SHADOW(linearity=2.1)
+    blob#57  area=  233  sol=0.74  pt=(1908,958)  SHADOW(border)
+    blob#58  area=   68  sol=0.94  pt=(1838,972)  SHADOW(linearity=1.4)
+  [38.54] sparkle: ratio=0.404 thr=0.350(loop,ep_dist=121) ok
+  [38.54] prune seg: removed 1-blob side (link=605px)
+  [38.54] chain (3 blobs):
+    area=  318  pt=(487,7)
+    area=  329  pt=(514,28)
+    area= 2406  pt=(527,121)
+  saved: D:/University/SMARTS/Spring26/dissection_specific_scripts/dissection_specific_scripts/test_img/test_range/output/38.54.png
+
+=== 38.105 ===
+Processing 38/105.png ...
+  [38.105] shadow suppression (median_area=143, cluster_thr=41472 px):
+    blob# 0  area=  339  sol=0.67  pt=(490,14)  keep
+    blob# 1  area=  170  sol=0.76  pt=(516,23)  SHADOW(border)
+    blob# 2  area= 2098  sol=0.63  pt=(528,108)  keep
+    blob# 3  area=20061  sol=0.42  pt=(1752,285)  SHADOW(B0-abs)
+    blob# 4  area= 7433  sol=0.48  pt=(1857,221)  keep
+    blob# 5  area=   75  sol=0.93  pt=(1589,172)  keep
+    blob# 6  area=   89  sol=0.79  pt=(1598,195)  keep
+    blob# 7  area=   39  sol=1.08  pt=(1657,255)  keep
+    blob# 8  area= 1032  sol=0.69  pt=(712,323)  keep
+    blob# 9  area=  154  sol=0.62  pt=(1685,322)  keep
+    blob#10  area=  213  sol=0.39  pt=(1741,331)  keep
+    blob#11  area=   95  sol=0.86  pt=(1910,322)  SHADOW(border)
+    blob#12  area=  150  sol=0.50  pt=(1741,352)  keep
+    blob#13  area=   83  sol=0.56  pt=(1757,380)  SHADOW(linearity=4.0)
+    blob#14  area=   38  sol=1.06  pt=(1867,382)  SHADOW(linearity=2.8)
+    blob#15  area= 1588  sol=0.94  pt=(775,408)  keep
+    blob#16  area=  137  sol=0.62  pt=(1877,408)  SHADOW(linearity=2.0)
+    blob#17  area=  291  sol=0.77  pt=(1908,419)  SHADOW(border)
+    blob#18  area=  104  sol=0.51  pt=(1897,444)  SHADOW(border)
+    blob#19  area=   49  sol=0.44  pt=(1787,454)  keep
+    blob#20  area=   41  sol=0.96  pt=(1917,461)  SHADOW(border)
+    blob#21  area=   43  sol=0.89  pt=(1873,487)  SHADOW(linearity=1.5)
+    blob#22  area= 3932  sol=0.70  pt=(889,568)  keep
+    blob#23  area=   29  sol=0.89  pt=(505,568)  keep
+    blob#24  area= 1449  sol=0.74  pt=(916,747)  SHADOW(linearity=2.2)
+    blob#25  area=  181  sol=0.73  pt=(941,795)  SHADOW(linearity=2.2)
+    blob#26  area=  565  sol=0.46  pt=(889,832)  SHADOW(linearity=2.2)
+    blob#27  area=   58  sol=1.04  pt=(911,817)  SHADOW(linearity=2.2)
+    blob#28  area= 1000  sol=0.90  pt=(1009,841)  SHADOW(linearity=2.2)
+    blob#29  area=   42  sol=0.98  pt=(1808,825)  keep
+    blob#30  area=  203  sol=0.50  pt=(1902,862)  SHADOW(border)
+    blob#31  area=   62  sol=0.98  pt=(1836,867)  keep
+    blob#32  area=   25  sol=1.32  pt=(948,885)  SHADOW(linearity=2.0)
+    blob#33  area=  786  sol=0.51  pt=(1902,912)  keep
+    blob#34  area=   34  sol=1.11  pt=(1912,957)  SHADOW(border)
+    blob#35  area=   86  sol=0.77  pt=(1583,975)  keep
+    blob#36  area=  309  sol=0.73  pt=(1688,1007)  keep
+    blob#37  area=  798  sol=0.59  pt=(1879,1024)  keep
+    blob#38  area=   46  sol=0.90  pt=(1731,1026)  keep
+    blob#39  area=   53  sol=0.95  pt=(1752,1035)  keep
+    blob#40  area=   30  sol=1.20  pt=(1831,1034)  keep
+    blob#41  area=  149  sol=0.57  pt=(1824,1053)  SHADOW(border)
+  [38.105] sparkle: ratio=0.073 thr=0.125 TRIGGERS
+  [38.105]   >> sparkle retry accepted: 9 sig blobs -> chain (2 blobs, med=1218)
+  [38.105] prune seg: removed 1-blob side (link=585px)
+  [38.105] chain (2 blobs):
+    area=  339  pt=(490,14)
+    area= 2098  pt=(528,108)
+  saved: D:/University/SMARTS/Spring26/dissection_specific_scripts/dissection_specific_scripts/test_img/test_range/output/38.105.png
+
+=== 38.166 ===
+Processing 38/166.png ...
+  [38.166] shadow suppression (median_area=101, cluster_thr=41472 px):
+    blob# 0  area=   77  sol=0.43  pt=(512,27)  SHADOW(border)
+    blob# 1  area= 1846  sol=0.58  pt=(527,100)  keep
+    blob# 2  area=   63  sol=0.76  pt=(1515,70)  keep
+    blob# 3  area=   38  sol=0.67  pt=(1511,89)  keep
+    blob# 4  area=   32  sol=0.68  pt=(1543,93)  keep
+    blob# 5  area=29534  sol=0.51  pt=(1702,260)  SHADOW(B0-abs)
+    blob# 6  area= 3165  sol=0.41  pt=(1861,184)  SHADOW(B2)
+    blob# 7  area=   38  sol=0.76  pt=(1517,130)  keep
+    blob# 8  area=  127  sol=0.57  pt=(1522,183)  keep
+    blob# 9  area=   25  sol=0.91  pt=(1503,188)  keep
+    blob#10  area=   28  sol=0.72  pt=(1562,197)  keep
+    blob#11  area=   34  sol=1.10  pt=(1916,207)  SHADOW(border)
+    blob#12  area=  161  sol=0.75  pt=(1533,213)  keep
+    blob#13  area=  173  sol=0.78  pt=(1836,225)  keep
+    blob#14  area=   31  sol=0.91  pt=(1807,225)  keep
+    blob#15  area=   26  sol=0.80  pt=(1590,227)  keep
+    blob#16  area=  161  sol=0.76  pt=(1908,258)  SHADOW(border)
+    blob#17  area=  601  sol=0.76  pt=(705,272)  keep
+    blob#18  area=   33  sol=0.86  pt=(1652,273)  keep
+    blob#19  area=  105  sol=0.87  pt=(1815,298)  keep
+    blob#20  area=  300  sol=0.77  pt=(1880,324)  keep
+    blob#21  area=  146  sol=1.01  pt=(1848,315)  keep
+    blob#22  area=  799  sol=0.86  pt=(775,322)  keep
+    blob#23  area=  164  sol=0.91  pt=(1796,335)  keep
+    blob#24  area=   50  sol=1.03  pt=(811,335)  keep
+    blob#25  area=   48  sol=1.19  pt=(1848,351)  keep
+    blob#26  area=   50  sol=0.77  pt=(1866,354)  keep
+    blob#27  area=  225  sol=0.29  pt=(1874,373)  SHADOW(linearity=3.3)
+    blob#28  area=   27  sol=1.12  pt=(1903,374)  SHADOW(border)
+    blob#29  area=   31  sol=0.82  pt=(1916,375)  SHADOW(border)
+    blob#30  area=   30  sol=0.67  pt=(1676,400)  SHADOW(linearity=4.0)
+    blob#31  area=  134  sol=0.60  pt=(1875,409)  SHADOW(linearity=2.7)
+    blob#32  area= 4620  sol=0.71  pt=(873,499)  keep
+    blob#33  area=  125  sol=0.76  pt=(454,432)  keep
+    blob#34  area=  158  sol=0.84  pt=(1696,433)  SHADOW(linearity=2.0)
+    blob#35  area=   82  sol=0.67  pt=(1887,447)  keep
+    blob#36  area=  293  sol=0.70  pt=(1794,459)  SHADOW(linearity=1.8)
+    blob#37  area=   44  sol=0.75  pt=(1909,454)  SHADOW(border)
+    blob#38  area=  316  sol=0.58  pt=(1873,493)  SHADOW(linearity=3.2)
+    blob#39  area=   26  sol=0.96  pt=(1800,481)  SHADOW(linearity=1.7)
+    blob#40  area=  145  sol=0.64  pt=(1818,502)  SHADOW(linearity=2.7)
+    blob#41  area=   97  sol=0.78  pt=(862,596)  keep
+    blob#42  area= 1072  sol=0.94  pt=(901,678)  keep
+    blob#43  area=   29  sol=1.00  pt=(848,661)  keep
+    blob#44  area=   34  sol=1.11  pt=(931,743)  keep
+    blob#45  area=   50  sol=0.62  pt=(1903,778)  SHADOW(border)
+    blob#46  area=  505  sol=0.88  pt=(999,804)  keep
+    blob#47  area= 1133  sol=0.45  pt=(1808,825)  keep
+    blob#48  area=  152  sol=0.81  pt=(1913,802)  SHADOW(border)
+    blob#49  area=   26  sol=0.71  pt=(1846,799)  keep
+    blob#50  area= 2147  sol=0.60  pt=(1900,879)  keep
+    blob#51  area=  175  sol=0.83  pt=(1860,837)  keep
+    blob#52  area=   87  sol=0.51  pt=(1854,853)  keep
+    blob#53  area= 7736  sol=0.58  pt=(1729,947)  keep
+    blob#54  area=   95  sol=0.76  pt=(1912,957)  SHADOW(border)
+    blob#55  area=   44  sol=1.05  pt=(1889,974)  keep
+  [38.166] sparkle: ratio=0.528 thr=0.350(loop,ep_dist=189) ok
+  [38.166] chain (3 blobs):
+    area=   26  pt=(1846,799)
+    area= 1133  pt=(1808,825)
+    area= 7736  pt=(1729,947)
+  saved: D:/University/SMARTS/Spring26/dissection_specific_scripts/dissection_specific_scripts/test_img/test_range/output/38.166.png
+
+=== 39.170 ===
+Processing 39/170.png ...
+  [39.170] shadow suppression (median_area=145, cluster_thr=41472 px):
+    blob# 0  area=  154  sol=0.71  pt=(1767,35)  keep
+    blob# 1  area=   28  sol=1.19  pt=(787,71)  keep
+    blob# 2  area=   86  sol=0.66  pt=(1663,78)  keep
+    blob# 3  area= 6604  sol=0.54  pt=(1699,201)  keep
+    blob# 4  area=   89  sol=0.59  pt=(1751,119)  SHADOW(linearity=2.6)
+    blob# 5  area= 4761  sol=0.58  pt=(1783,187)  keep
+    blob# 6  area=  503  sol=0.47  pt=(1891,195)  keep
+    blob# 7  area=   35  sol=0.85  pt=(1639,182)  SHADOW(linearity=1.5)
+    blob# 8  area=  128  sol=0.90  pt=(1088,200)  keep
+    blob# 9  area=  265  sol=0.85  pt=(1196,201)  keep
+    blob#10  area=  607  sol=0.71  pt=(968,224)  keep
+    blob#11  area=  270  sol=0.79  pt=(1849,226)  keep
+    blob#12  area=  570  sol=0.71  pt=(1895,239)  keep
+    blob#13  area=  641  sol=0.81  pt=(915,247)  keep
+    blob#14  area=   75  sol=1.02  pt=(1276,247)  keep
+    blob#15  area=  454  sol=0.66  pt=(840,274)  keep
+    blob#16  area=   32  sol=1.14  pt=(804,283)  keep
+    blob#17  area=  136  sol=0.72  pt=(758,293)  keep
+    blob#18  area=  822  sol=0.78  pt=(1369,333)  keep
+    blob#19  area=  130  sol=0.77  pt=(1893,329)  SHADOW(border)
+    blob#20  area=29518  sol=0.37  pt=(1848,620)  SHADOW(B0-abs)
+    blob#21  area=   55  sol=1.08  pt=(1745,349)  keep
+    blob#22  area=   86  sol=0.93  pt=(1908,357)  SHADOW(border)
+    blob#23  area=  954  sol=0.58  pt=(1373,458)  keep
+    blob#24  area=   95  sol=0.49  pt=(1809,461)  SHADOW(linearity=3.0)
+    blob#25  area= 7744  sol=0.44  pt=(1734,612)  SHADOW(linearity=1.9)
+    blob#26  area=   70  sol=0.90  pt=(1387,503)  keep
+    blob#27  area=  347  sol=0.60  pt=(1770,517)  SHADOW(linearity=2.7)
+    blob#28  area=  568  sol=0.38  pt=(1823,599)  SHADOW(linearity=2.7)
+    blob#29  area=  780  sol=0.66  pt=(1380,625)  keep
+    blob#30  area=   53  sol=0.47  pt=(1793,611)  SHADOW(linearity=1.9)
+    blob#31  area=   30  sol=1.15  pt=(1668,644)  keep
+    blob#32  area=  606  sol=0.65  pt=(1642,780)  SHADOW(linearity=1.4)
+    blob#33  area=   50  sol=0.90  pt=(905,794)  keep
+    blob#34  area=   42  sol=0.91  pt=(1751,826)  SHADOW(linearity=3.5)
+    blob#35  area=   45  sol=0.96  pt=(1613,836)  SHADOW(linearity=2.4)
+    blob#36  area=  385  sol=0.65  pt=(1688,850)  SHADOW(linearity=1.4)
+    blob#37  area=   37  sol=0.67  pt=(1668,882)  SHADOW(linearity=2.7)
+    blob#38  area=  127  sol=0.85  pt=(1689,882)  SHADOW(linearity=1.2)
+    blob#39  area=  372  sol=0.67  pt=(1827,915)  SHADOW(linearity=2.6)
+    blob#40  area=  205  sol=0.63  pt=(1682,915)  SHADOW(linearity=1.7)
+    blob#41  area=  258  sol=0.49  pt=(1494,936)  keep
+    blob#42  area=  421  sol=0.58  pt=(1542,944)  keep
+    blob#43  area=  757  sol=0.60  pt=(1520,977)  keep
+    blob#44  area=   36  sol=0.74  pt=(1744,971)  SHADOW(linearity=2.7)
+    blob#45  area=   58  sol=1.18  pt=(1612,994)  keep
+    blob#46  area=   44  sol=1.07  pt=(1563,994)  keep
+    blob#47  area=  336  sol=0.75  pt=(1664,1051)  keep
+    blob#48  area=   76  sol=0.77  pt=(1681,1063)  SHADOW(border)
+    blob#49  area=   39  sol=1.20  pt=(1727,1069)  SHADOW(border)
+  [39.170] sparkle: ratio=2.794 thr=0.350(loop,ep_dist=200) ok
+  [39.170] chain (4 blobs):
+    area=  570  pt=(1895,239)
+    area=  270  pt=(1849,226)
+    area= 4761  pt=(1783,187)
+    area= 6604  pt=(1699,201)
+  saved: D:/University/SMARTS/Spring26/dissection_specific_scripts/dissection_specific_scripts/test_img/test_range/output/39.170.png
+
+=== 39.190 ===
+Processing 39/190.png ...
+  [39.190] shadow suppression (median_area=84, cluster_thr=41472 px):
+    blob# 0  area=   52  sol=0.98  pt=(760,4)  SHADOW(border)
+    blob# 1  area=   31  sol=1.17  pt=(1508,3)  SHADOW(border)
+    blob# 2  area=  157  sol=0.67  pt=(1588,10)  SHADOW(border)
+    blob# 3  area=   27  sol=0.95  pt=(1579,24)  SHADOW(border)
+    blob# 4  area=  194  sol=0.70  pt=(1769,35)  keep
+    blob# 5  area=   70  sol=1.06  pt=(1582,42)  keep
+    blob# 6  area=   32  sol=1.07  pt=(1564,48)  keep
+    blob# 7  area=11208  sol=0.50  pt=(1685,182)  SHADOW(B2)
+    blob# 8  area=   38  sol=0.86  pt=(1566,63)  keep
+    blob# 9  area=   27  sol=0.90  pt=(1731,80)  keep
+    blob#10  area= 4140  sol=0.62  pt=(1769,170)  SHADOW(B2)
+    blob#11  area=   26  sol=1.30  pt=(804,100)  keep
+    blob#12  area=   26  sol=1.16  pt=(1580,124)  keep
+    blob#13  area=   73  sol=0.83  pt=(1829,165)  keep
+    blob#14  area=   25  sol=1.19  pt=(1580,168)  keep
+    blob#15  area=   38  sol=0.89  pt=(1868,183)  SHADOW(linearity=3.1)
+    blob#16  area=  123  sol=0.78  pt=(1885,192)  SHADOW(linearity=3.1)
+    blob#17  area=   71  sol=0.61  pt=(1911,199)  SHADOW(border)
+    blob#18  area=  275  sol=0.96  pt=(1185,214)  keep
+    blob#19  area=   88  sol=0.86  pt=(1073,214)  keep
+    blob#20  area= 1172  sol=0.61  pt=(1874,233)  SHADOW(B2)
+    blob#21  area=  648  sol=0.77  pt=(953,247)  keep
+    blob#22  area=   41  sol=0.64  pt=(1793,242)  SHADOW(linearity=2.2)
+    blob#23  area=  779  sol=0.78  pt=(904,269)  keep
+    blob#24  area=   50  sol=0.99  pt=(1651,270)  keep
+    blob#25  area=  266  sol=0.57  pt=(825,304)  keep
+    blob#26  area=  148  sol=0.67  pt=(790,311)  keep
+    blob#27  area=  528  sol=0.80  pt=(1358,322)  keep
+    blob#28  area=32381  sol=0.35  pt=(1814,560)  SHADOW(B0-abs)
+    blob#29  area=   44  sol=0.94  pt=(741,334)  keep
+    blob#30  area=   26  sol=1.02  pt=(1785,333)  SHADOW(cluster-area)
+    blob#31  area=   38  sol=0.92  pt=(1746,342)  SHADOW(cluster-area)
+    blob#32  area=   35  sol=0.77  pt=(1351,343)  keep
+    blob#33  area=  107  sol=0.63  pt=(1735,375)  SHADOW(cluster-area)
+    blob#34  area=   48  sol=0.57  pt=(1776,384)  SHADOW(cluster-area)
+    blob#35  area=   29  sol=0.98  pt=(1749,388)  SHADOW(cluster-area)
+    blob#36  area=  189  sol=0.77  pt=(1779,406)  SHADOW(cluster-area)
+    blob#37  area=   57  sol=0.93  pt=(1362,405)  keep
+    blob#38  area=   29  sol=0.97  pt=(1802,411)  keep
+    blob#39  area=  179  sol=0.74  pt=(1386,426)  keep
+    blob#40  area=  167  sol=0.96  pt=(1358,426)  keep
+    blob#41  area=  104  sol=0.78  pt=(1794,460)  keep
+    blob#42  area=   41  sol=0.63  pt=(1803,515)  keep
+    blob#43  area=   85  sol=0.55  pt=(1888,530)  SHADOW(linearity=3.0)
+    blob#44  area=   63  sol=0.79  pt=(1777,529)  keep
+    blob#45  area=   25  sol=1.25  pt=(1804,530)  keep
+    blob#46  area=   84  sol=0.73  pt=(1423,558)  keep
+    blob#47  area=   56  sol=0.39  pt=(1630,570)  SHADOW(cluster-area)
+    blob#48  area=   68  sol=0.73  pt=(1805,577)  SHADOW(linearity=3.1)
+    blob#49  area=  114  sol=0.90  pt=(1434,582)  keep
+    blob#50  area=   88  sol=0.62  pt=(1911,595)  SHADOW(border)
+    blob#51  area=   42  sol=1.18  pt=(1627,596)  SHADOW(cluster-area)
+    blob#52  area=  822  sol=0.42  pt=(1643,639)  SHADOW(cluster-area)
+    blob#53  area=  189  sol=0.81  pt=(1593,635)  SHADOW(cluster-area)
+    blob#54  area=   28  sol=1.37  pt=(1371,642)  keep
+    blob#55  area=  651  sol=0.45  pt=(1599,686)  SHADOW(cluster-area)
+    blob#56  area=  157  sol=0.62  pt=(1545,711)  SHADOW(linearity=2.1)
+    blob#57  area= 3009  sol=0.62  pt=(1657,745)  SHADOW(cluster-area)
+    blob#58  area=   28  sol=1.00  pt=(1698,699)  SHADOW(cluster-area)
+    blob#59  area=  100  sol=0.89  pt=(1687,715)  SHADOW(cluster-area)
+    blob#60  area=  313  sol=0.44  pt=(1884,746)  SHADOW(linearity=1.9)
+    blob#61  area= 5190  sol=0.53  pt=(1588,797)  SHADOW(B2)
+    blob#62  area=  226  sol=0.65  pt=(1869,769)  SHADOW(linearity=3.9)
+    blob#63  area=  342  sol=0.85  pt=(1814,774)  SHADOW(cluster-area)
+    blob#64  area=   30  sol=1.22  pt=(1901,771)  SHADOW(border)
+    blob#65  area=   30  sol=1.03  pt=(1742,807)  SHADOW(linearity=1.2)
+    blob#66  area=   32  sol=1.28  pt=(1721,831)  keep
+    blob#67  area=   49  sol=1.09  pt=(1451,840)  keep
+    blob#68  area=   38  sol=0.85  pt=(1904,837)  SHADOW(border)
+    blob#69  area=  256  sol=0.58  pt=(1544,914)  SHADOW(linearity=1.7)
+    blob#70  area=  373  sol=0.47  pt=(1604,917)  SHADOW(linearity=1.5)
+    blob#71  area=   97  sol=0.89  pt=(1701,942)  keep
+    blob#72  area=  138  sol=0.60  pt=(1837,945)  keep
+    blob#73  area=  223  sol=0.65  pt=(1793,972)  keep
+    blob#74  area=   51  sol=1.00  pt=(1832,1002)  keep
+    blob#75  area=  553  sol=0.63  pt=(1884,1022)  keep
+  [39.190] prune seg: removed 2-blob side (link=681px)
+  [39.190] trim tail ep: area=179 angle=43�
+  [39.190] chain (8 blobs):
+    area=   44  pt=(741,334)
+    area=  148  pt=(790,311)
+    area=  266  pt=(825,304)
+    area=  779  pt=(904,269)
+    area=  648  pt=(953,247)
+    area=   88  pt=(1073,214)
+    area=  275  pt=(1185,214)
+    area=  528  pt=(1358,322)
+  saved: D:/University/SMARTS/Spring26/dissection_specific_scripts/dissection_specific_scripts/test_img/test_range/output/39.190.png
+
+=== 41.97 ===
+Processing 41/97.png ...
+  [41.97] shadow suppression (median_area=99, cluster_thr=41472 px):
+    blob# 0  area=   53  sol=1.06  pt=(1806,3)  SHADOW(border)
+    blob# 1  area=36869  sol=0.66  pt=(1784,166)  SHADOW(B0-abs)
+    blob# 2  area=   26  sol=1.41  pt=(991,84)  keep
+    blob# 3  area=  386  sol=0.77  pt=(980,109)  keep
+    blob# 4  area=  302  sol=0.39  pt=(1563,141)  keep
+    blob# 5  area=   35  sol=1.15  pt=(1519,163)  keep
+    blob# 6  area= 2696  sol=0.72  pt=(1004,228)  keep
+    blob# 7  area=   56  sol=0.65  pt=(1570,197)  keep
+    blob# 8  area=  374  sol=0.77  pt=(1631,220)  keep
+    blob# 9  area=  247  sol=0.82  pt=(1720,248)  SHADOW(cluster-area)
+    blob#10  area=  251  sol=0.56  pt=(1018,348)  keep
+    blob#11  area=   55  sol=0.95  pt=(1037,379)  keep
+    blob#12  area= 1185  sol=0.78  pt=(1890,422)  keep
+    blob#13  area=  265  sol=0.82  pt=(1785,451)  keep
+    blob#14  area= 2460  sol=0.78  pt=(1079,480)  keep
+    blob#15  area= 2443  sol=0.54  pt=(1764,487)  SHADOW(B2)
+    blob#16  area=  329  sol=0.36  pt=(1699,510)  keep
+    blob#17  area=  107  sol=0.87  pt=(1913,496)  SHADOW(border)
+    blob#18  area=  308  sol=0.72  pt=(1811,519)  keep
+    blob#19  area=   45  sol=0.90  pt=(1862,515)  SHADOW(linearity=1.4)
+    blob#20  area=   88  sol=0.91  pt=(1744,520)  SHADOW(linearity=2.0)
+    blob#21  area=   26  sol=0.67  pt=(1844,531)  SHADOW(linearity=1.4)
+    blob#22  area=   34  sol=0.91  pt=(1779,538)  SHADOW(linearity=1.8)
+    blob#23  area= 4728  sol=0.42  pt=(1809,604)  SHADOW(linearity=1.9)
+    blob#24  area=  285  sol=0.53  pt=(1724,573)  keep
+    blob#25  area= 2332  sol=0.64  pt=(1193,650)  SHADOW(linearity=1.4)
+    blob#26  area=   31  sol=0.94  pt=(1694,589)  SHADOW(linearity=3.5)
+    blob#27  area=  204  sol=0.53  pt=(1717,617)  keep
+    blob#28  area=  195  sol=0.54  pt=(1900,644)  SHADOW(border)
+    blob#29  area=   78  sol=0.63  pt=(1880,658)  keep
+    blob#30  area=   43  sol=0.95  pt=(1783,682)  keep
+    blob#31  area=  103  sol=0.70  pt=(1728,694)  keep
+    blob#32  area=   97  sol=0.55  pt=(1766,699)  SHADOW(linearity=1.7)
+    blob#33  area=   51  sol=0.68  pt=(1799,708)  keep
+    blob#34  area=  633  sol=0.52  pt=(1898,718)  SHADOW(linearity=2.2)
+    blob#35  area=  105  sol=0.75  pt=(1848,712)  keep
+    blob#36  area=  120  sol=1.08  pt=(1119,719)  SHADOW(linearity=3.0)
+    blob#37  area= 2662  sol=0.46  pt=(1820,781)  SHADOW(linearity=1.7)
+    blob#38  area=   37  sol=1.19  pt=(1797,732)  SHADOW(linearity=1.9)
+    blob#39  area=   80  sol=0.86  pt=(1216,747)  SHADOW(linearity=3.1)
+    blob#40  area=   69  sol=0.68  pt=(1754,751)  SHADOW(linearity=2.1)
+    blob#41  area=  133  sol=0.45  pt=(1863,756)  SHADOW(linearity=1.6)
+    blob#42  area=   73  sol=0.82  pt=(1786,752)  keep
+    blob#43  area=  253  sol=0.66  pt=(1141,761)  SHADOW(linearity=3.0)
+    blob#44  area=  771  sol=0.41  pt=(1757,802)  SHADOW(linearity=2.4)
+    blob#45  area=  429  sol=0.50  pt=(1191,800)  SHADOW(linearity=2.8)
+    blob#46  area=   57  sol=0.98  pt=(1207,779)  SHADOW(linearity=3.0)
+    blob#47  area=   96  sol=0.85  pt=(1722,786)  SHADOW(linearity=2.2)
+    blob#48  area=   57  sol=0.67  pt=(1794,816)  keep
+    blob#49  area=   35  sol=0.61  pt=(1870,814)  keep
+    blob#50  area=  196  sol=0.62  pt=(1893,825)  SHADOW(border)
+    blob#51  area=   99  sol=0.76  pt=(1862,829)  keep
+    blob#52  area=  242  sol=0.56  pt=(1776,842)  keep
+    blob#53  area=   66  sol=0.93  pt=(1208,837)  SHADOW(linearity=1.5)
+    blob#54  area=  158  sol=0.81  pt=(1847,847)  keep
+    blob#55  area=   59  sol=0.67  pt=(1810,858)  SHADOW(linearity=2.0)
+    blob#56  area=  106  sol=0.93  pt=(1092,863)  SHADOW(linearity=2.4)
+    blob#57  area=   92  sol=0.63  pt=(1767,862)  SHADOW(linearity=2.1)
+    blob#58  area=   29  sol=0.84  pt=(1113,865)  SHADOW(linearity=2.4)
+    blob#59  area=   33  sol=1.06  pt=(1349,872)  keep
+    blob#60  area=  744  sol=0.45  pt=(1869,909)  keep
+    blob#61  area=   25  sol=1.19  pt=(1109,909)  keep
+    blob#62  area= 2184  sol=0.61  pt=(1803,943)  keep
+    blob#63  area=  106  sol=0.82  pt=(1455,950)  keep
+    blob#64  area=  114  sol=0.78  pt=(1716,955)  SHADOW(linearity=1.8)
+    blob#65  area= 2636  sol=0.50  pt=(1570,998)  SHADOW(B2)
+    blob#66  area=   50  sol=0.84  pt=(1578,961)  keep
+    blob#67  area=   61  sol=0.98  pt=(1485,968)  keep
+    blob#68  area=   35  sol=0.83  pt=(1696,967)  SHADOW(linearity=2.1)
+    blob#69  area=   66  sol=0.92  pt=(1812,991)  keep
+    blob#70  area=  204  sol=0.62  pt=(1787,1018)  keep
+    blob#71  area=   39  sol=0.80  pt=(1814,1019)  keep
+    blob#72  area=   28  sol=0.90  pt=(1840,1027)  keep
+    blob#73  area=   32  sol=0.96  pt=(1647,1030)  keep
+    blob#74  area=   91  sol=0.37  pt=(1696,1048)  keep
+    blob#75  area=   89  sol=0.71  pt=(1640,1043)  keep
+    blob#76  area=   37  sol=1.00  pt=(1713,1053)  SHADOW(border)
+  [41.97] prune seg: removed 2-blob side (link=621px)
+  [41.97] chain (6 blobs):
+    area=   26  pt=(991,84)
+    area=  386  pt=(980,109)
+    area= 2696  pt=(1004,228)
+    area=  251  pt=(1018,348)
+    area=   55  pt=(1037,379)
+    area= 2460  pt=(1079,480)
+  saved: D:/University/SMARTS/Spring26/dissection_specific_scripts/dissection_specific_scripts/test_img/test_range/output/41.97.png
+
+=== 42.130 ===
+Processing 42/130.png ...
+  [42.130] shadow suppression (median_area=180, cluster_thr=41472 px):
+    blob# 0  area=  926  sol=0.74  pt=(713,166)  keep
+    blob# 1  area=   54  sol=1.24  pt=(794,189)  keep
+    blob# 2  area=  563  sol=0.69  pt=(541,201)  keep
+    blob# 3  area=  576  sol=0.55  pt=(603,209)  keep
+    blob# 4  area=   33  sol=0.61  pt=(769,213)  keep
+    blob# 5  area= 2952  sol=0.47  pt=(1001,326)  keep
+    blob# 6  area= 1228  sol=0.59  pt=(552,300)  keep
+    blob# 7  area=   75  sol=0.80  pt=(973,294)  keep
+    blob# 8  area=   82  sol=0.91  pt=(584,367)  keep
+    blob# 9  area=  216  sol=0.83  pt=(603,405)  keep
+    blob#10  area= 2767  sol=0.53  pt=(1069,484)  SHADOW(linearity=2.2)
+    blob#11  area=   27  sol=0.93  pt=(1125,521)  keep
+    blob#12  area=   72  sol=1.05  pt=(641,534)  keep
+    blob#13  area=   25  sol=1.14  pt=(1060,539)  SHADOW(linearity=2.3)
+    blob#14  area=  145  sol=0.93  pt=(1121,544)  SHADOW(linearity=3.0)
+    blob#15  area=   46  sol=1.14  pt=(628,554)  keep
+    blob#16  area= 1379  sol=0.74  pt=(1041,589)  SHADOW(linearity=2.1)
+    blob#17  area=   81  sol=1.11  pt=(1105,602)  SHADOW(linearity=2.1)
+    blob#18  area=   26  sol=1.02  pt=(1086,617)  SHADOW(linearity=2.1)
+    blob#19  area=  796  sol=0.75  pt=(665,641)  keep
+    blob#20  area=  261  sol=0.91  pt=(1092,639)  SHADOW(linearity=2.2)
+    blob#21  area=  102  sol=0.71  pt=(1029,640)  SHADOW(linearity=2.2)
+    blob#22  area=  132  sol=0.76  pt=(1004,639)  SHADOW(linearity=3.1)
+    blob#23  area=  233  sol=0.62  pt=(1112,660)  SHADOW(linearity=2.2)
+    blob#24  area= 1883  sol=0.67  pt=(1132,699)  SHADOW(linearity=2.7)
+    blob#25  area= 4059  sol=0.79  pt=(882,767)  keep
+    blob#26  area=  561  sol=0.60  pt=(1099,771)  keep
+    blob#27  area=  365  sol=0.38  pt=(995,837)  keep
+    blob#28  area=   45  sol=0.80  pt=(1113,952)  keep
+    blob#29  area=   29  sol=1.02  pt=(1093,957)  keep
+  [42.130] trim tail ep: area=561 angle=49�
+  [42.130] chain (7 blobs):
+    area=   45  pt=(1113,952)
+    area=  365  pt=(995,837)
+    area= 4059  pt=(882,767)
+    area= 1228  pt=(552,300)
+    area=  576  pt=(603,209)
+    area=  926  pt=(713,166)
+    area= 2952  pt=(1001,326)
+  saved: D:/University/SMARTS/Spring26/dissection_specific_scripts/dissection_specific_scripts/test_img/test_range/output/42.130.png

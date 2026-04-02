@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(cd \"D:/University/SMARTS/Spring26/dissection_specific_scripts/dissection_specific_scripts\" && python run_test.py 2>&1 | tee /tmp/debug_all.txt | python -c \"\nimport sys\ncontent = sys.stdin.read\\(\\)\nlines = content.split\\('\\\\n'\\)\ntargets = ['8.118','10.83','38.54','38.105','38.166','39.170','39.190','41.97','42.130']\nsections = {t:[] for t in targets}\ncurrent = None\nfor line in lines:\n    for img in targets:\n        f,fr = img.split\\('.'\\)\n        if f'Processing {f}/{fr}.png' in line:\n            current = img; break\n    if current:\n        sections[current].append\\(line\\)\n        if 'saved:' in line:\n            current = None\nfor img in targets:\n    print\\(f'\\\\n=== {img} ==='\\)\n    for l in sections[img]: print\\(l\\)\n\" 2>&1 | cat)",
+      "Bash(cd:*)",
+      "Bash(python -c \":*)",
+      "Bash(grep -v \"^$\")",
+      "Bash(grep -v \"blob#\\\\|area=\\\\|^$\")",
+      "Bash(grep -E \"Processing|sol=0\\\\.[0-4].*area=[0-9]{4,}\")",
+      "Bash(find D:/University/SMARTS/Spring26/dissection_specific_scripts -name *43*186* -o -name *186*43*)",
+      "Bash(find D:/University/SMARTS/Spring26/dissection_specific_scripts -name *mask* -o -name *draw* -o -name *trajectory* -o -name *manual*)",
+      "Bash(find D:/University/SMARTS/Spring26/dissection_specific_scripts -newer D:/University/SMARTS/Spring26/dissection_specific_scripts/dissection_specific_scripts/test_img/test_range/output/43.186.png -name *.png)",
+      "Bash(sort -t= -k2 -n)",
+      "Bash(.venv/Scripts/python -c ':*)"
+    ]
+  }
+}
